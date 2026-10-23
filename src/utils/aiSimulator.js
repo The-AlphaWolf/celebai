@@ -255,9 +255,83 @@ Feel free to ask for more ideas, refine your vendor checklist, or click **Export
     };
   }
 
-  // 8. GENERAL INTEL & CONSULTING ADVICE
-  return {
-    text: `### 💡 Event Architecture Insights for "${title}"
+  // 8. CULINARY, RECIPES & BANQUET MENUS
+  if (q.includes('mix veg') || q.includes('recipe') || q.includes('cook') || q.includes('dish') || q.includes('curry') || q.includes('vegetable')) {
+    return {
+      text: `### 🍲 Chef's Banquet Recipe: Royal Celebration Mixed Vegetable (*Shaahi Subz Melange*)
+
+*Curated for celebratory banquets, wedding receptions, and milestone family dinners (Serves 8–10, scales easily for 50–100+ guests).*
+
+---
+
+#### 🥕 Fresh Ingredients & Jewel Medley:
+- **Vegetables (Jewel Cut):** 1.5 cups fresh cauliflower florets, 1/2 cup diced carrots, 1/2 cup french green beans, 1/2 cup sweet green peas, 1/2 cup baby corn (halved).
+- **Golden Protein:** 1 cup cubed *malai paneer* (or organic pressed firm tofu for a 100% vegan banquet).
+- **Vibrant Crunch:** 1/2 cup tricolor sweet bell peppers (red, yellow, green) cut into 1-inch diamonds.
+- **Aromatic Whole Spices:** 2 tbsp pure desi ghee (or cold-pressed coconut oil), 1 tsp cumin seeds, 2 green cardamom pods, 1 black cardamom, 1-inch cinnamon stick, 1 bay leaf.
+- **Velvet Cashew-Tomato Gravy Base:** 
+  - 2 medium sweet onions (finely minced)
+  - 1.5 tbsp freshly pounded ginger-garlic paste
+  - 3 large ripe Roma tomatoes puréed with 15 soaked raw cashews and 1 tbsp melon seeds (*magaz*)
+- **Festive Spices:** 1/2 tsp turmeric powder, 1.5 tsp Kashmiri red chili powder (vibrant ruby color without aggressive heat), 1.5 tsp roasted coriander powder, 1/2 tsp *shahi garam masala*, 1 tsp crushed *kasuri methi* (sun-dried fenugreek leaves), salt to taste.
+- **Garnish & Finish:** 2 tbsp light cream, fresh ginger juliennes, chopped fresh cilantro.
+
+---
+
+#### 👨‍🍳 Step-by-Step Banquet Cooking Method:
+1. **Jewel Blanching (Color Lock):** Bring salted water to a rolling boil with a pinch of sugar. Parboil cauliflower, carrots, beans, and baby corn for **3 minutes**. Immediately transfer into an ice water bath. *(Pro Tip: This locks in the vivid green and orange jewel tones and keeps them crisp-tender inside chafing dishes).*
+2. **Pan-Sear the Paneer & Peppers:** In a wide pan or karahi, heat 1 tsp ghee. Flash-sauté paneer cubes and bell peppers on high heat for 2 minutes until edges are kissed with gold. Remove and set aside.
+3. **Aromatic Foundation:** Heat the remaining ghee in the karahi. Add the whole spices (cumin, cardamoms, cinnamon, bay leaf). When they crackle and release their fragrance, add the minced onions. Sauté patiently on medium heat until golden caramel. Add ginger-garlic paste and sauté for 60 seconds until fragrant.
+4. **Velvet Gravy Simmer:** Pour in the tomato-cashew purée. Add turmeric, Kashmiri red chili powder, coriander powder, and salt. Cook on medium-low flame, stirring frequently, until the gravy thickens and droplets of fragrant ghee separate along the pan sides (about 8–10 minutes).
+5. **Meld & Infuse:** Add 1/2 cup warm water to achieve a luxurious, velvety banquet consistency. Gently fold in the blanched vegetables, paneer cubes, and bell peppers. Cover and simmer gently for 4–5 minutes so the vegetables absorb the rich, spiced sauce without becoming mushy.
+6. **Royal Finale:** Remove from heat. Sprinkle crushed *kasuri methi* and *shahi garam masala*. Drizzle a swirl of cream and finish with fresh ginger matchsticks and cilantro sprigs.
+
+---
+
+#### 🍽️ Catering & Banquet Service Logistics:
+- **Buffet Holding:** Keep in heated chafing dishes at **65°C (150°F)**. For large-scale catering (50+ guests), keep par-cooked vegetables and cashew sauce separate, combining 20 minutes before serving.
+- **Perfect Pairings:** Accompany with warm garlic butter naan, zafrani saffron jeera rice, and a crisp pomegranate-cucumber mint raita.`
+    };
+  }
+
+  // 9. DESSERTS, SWEETS & CELEBRATION CAKES
+  if (q.includes('dessert') || q.includes('cake') || q.includes('sweet') || q.includes('pastry') || q.includes('chocolate')) {
+    return {
+      text: `### 🎂 Curated Celebration Dessert Architecture for "${title}":
+
+1. **Centerpiece Tiered Cake:**
+   - *Flavor Profile:* Tahitian vanilla bean chiffon with layers of crushed raspberry reduction and whipped mascarpone champagne buttercream.
+   - *Design Finish:* Semi-naked textured frosting with edible pressed florals and subtle brushed gold leaf accents.
+
+2. **Artisanal Gelato & Warm Dessert Station:**
+   - Small-batch pistachio cardamom gelato paired with warm dark chocolate lava bites and Belgian waffle crisps.
+
+3. **Petite Confection Display (Late-Night Energy Boost):**
+   - Lavender honey macarons, miniature passionfruit tarts, and dark chocolate sea-salt espresso truffles.`
+    };
+  }
+
+  // 10. APPETIZERS & COCKTAIL HOUR HORS D'OEUVRES
+  if (q.includes('appetizer') || q.includes('starter') || q.includes('finger food') || q.includes('canap') || q.includes('hors d')) {
+    return {
+      text: `### 🍢 4 High-End Cocktail Hour Canapés & Starters:
+
+1. **Truffle & Wild Mushroom Arancini:**
+   - Crisp arborio risotto spheres infused with black truffle emulsion and melted fontina cheese center.
+2. **Whipped Ricotta & Fig Crostini:**
+   - Toasted artisan sourdough topped with whipped thyme ricotta, caramelized mission figs, and aged balsamic glaze.
+3. **Spiced Paneer Tikka / Chicken Skewers:**
+   - Tender skewers marinated in Greek yogurt, smoked paprika, and mint chimichurri drizzle.
+4. **Chilled Mango Avocado Ceviche Cups (Vegan):**
+   - Diced mango, avocado, lime, and cilantro served in crispy wonton cups with toasted chili flakes.`
+    };
+  }
+
+  // 11. EVENT PLANNING ARCHITECTURE (if relevant to events)
+  const isEventRelated = /venue|decor|floral|invit|dress|attire|lighting|seating|table|speech|mc|host|video|celebrat|party|wedding|birthday|festival|plan/i.test(q);
+  if (isEventRelated) {
+    return {
+      text: `### 💡 Event Architecture Insights for "${title}"
 
 Regarding your request: **"${query}"** (Theme: *${theme}* | Target Budget: *$${(currentPlan.budget || budget).toLocaleString()} USD*):
 
@@ -266,5 +340,28 @@ Regarding your request: **"${query}"** (Theme: *${theme}* | Target Budget: *$${(
 3. **Budget Flexibility:** Keep at least 8–10% of your budget in an unallocated contingency buffer to cover last-minute vendor overtime or unexpected equipment needs.
 
 *You can ask me to reallocate budget categories, build a minute-by-minute timeline schedule, or curate vendor specifications!*`
+    };
+  }
+
+  // 12. TRANSPARENT DEMO MODE FALLBACK (for off-topic or general inquiries)
+  return {
+    text: `### 💡 CelebAI Assistant
+
+I noticed you asked: **"${query}"**.
+
+Currently, CelebAI is running in **Interactive Demo Mode**, which is pre-trained with celebration intelligence for:
+- 🍲 **Banquet & Catering Menus:** Ask for *"Give me the recipe for mix veg"*, *"Suggest cocktail hour appetizers"*, or *"Signature wedding cake flavors"*.
+- 💰 **Budget Balancing:** Say *"Suggest 3 ways to reduce catering costs by 15%"* or ask how to optimize your venue spend.
+- ⏱️ **Timelines & Run-of-Show:** Ask for a *"Minute-by-minute photography schedule"* or DJ reception timeline.
+- 🎵 **Sound & Atmosphere:** Ask for *"Grand entrance songs & reception playlist vibe"*.
+- 🍸 **Signature Drinks:** Ask for *"2 craft cocktails and a mocktail for our ${theme} theme"*.
+
+---
+
+#### 🚀 Want Open-Ended Conversational AI?
+To ask unrestricted questions (including general coding, trivia, or custom creative requests), connect your free **Google Gemini 2.5 Flash API Key**:
+1. Click the **Demo / Add Key** button in the top navigation bar.
+2. Paste your free key from [Google AI Studio](https://aistudio.google.com/app/apikey).`
   };
 }
+

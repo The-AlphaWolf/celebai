@@ -50,6 +50,10 @@ function FormattedText({ text }) {
           return <h4 key={idx} className="msg-h3">{parseInline(trimmed.slice(4))}</h4>;
         }
 
+        if (trimmed === '---' || trimmed === '***') {
+          return <hr key={idx} className="msg-hr" />;
+        }
+
         if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
           return (
             <div key={idx} className="msg-li">
@@ -493,6 +497,12 @@ export default function ChatPanel({
           font-size: 0.84rem;
           line-height: 1.5;
           margin: 0;
+        }
+
+        .msg-hr {
+          border: none;
+          border-top: 1px solid var(--border-medium, rgba(255, 255, 255, 0.12));
+          margin: 6px 0;
         }
 
         .msg-li, .msg-num-li {
