@@ -1,6 +1,80 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, Sparkles, Wand2, User, Bot, AlertCircle, RefreshCw, Check } from 'lucide-react';
 
+function parseInline(str) {
+  if (!str) return '';
+  const parts = [];
+  let keyIdx = 0;
+  const regex = /(\*\*.*?\*\*|\*.*?\*)/g;
+  let match;
+  let lastIndex = 0;
+
+  while ((match = regex.exec(str)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push(str.slice(lastIndex, match.index));
+    }
+    const token = match[0];
+    if (token.startsWith('**') && token.endsWith('**') && token.length > 4) {
+      parts.push(<strong key={keyIdx++}>{token.slice(2, -2)}</strong>);
+    } else if (token.startsWith('*') && token.endsWith('*') && token.length > 2) {
+      parts.push(<em key={keyIdx++}>{token.slice(1, -1)}</em>);
+    } else {
+      parts.push(token);
+    }
+    lastIndex = regex.lastIndex;
+  }
+
+  if (lastIndex < str.length) {
+    parts.push(str.slice(lastIndex));
+  }
+
+  return parts.length > 0 ? parts : str;
+}
+
+function FormattedText({ text }) {
+  if (!text) return null;
+  const lines = text.split('\n');
+
+  return (
+    <div className="msg-rich-content">
+      {lines.map((line, idx) => {
+        const trimmed = line.trim();
+        if (!trimmed) {
+          return <div key={idx} className="msg-space" />;
+        }
+
+        if (trimmed.startsWith('#### ')) {
+          return <h5 key={idx} className="msg-h4">{parseInline(trimmed.slice(5))}</h5>;
+        }
+        if (trimmed.startsWith('### ')) {
+          return <h4 key={idx} className="msg-h3">{parseInline(trimmed.slice(4))}</h4>;
+        }
+
+        if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
+          return (
+            <div key={idx} className="msg-li">
+              <span className="msg-bullet">✦</span>
+              <span>{parseInline(trimmed.slice(2))}</span>
+            </div>
+          );
+        }
+
+        const numMatch = trimmed.match(/^(\d+)\.\s+(.*)$/);
+        if (numMatch) {
+          return (
+            <div key={idx} className="msg-num-li">
+              <span className="msg-num-badge">{numMatch[1]}</span>
+              <span>{parseInline(numMatch[2])}</span>
+            </div>
+          );
+        }
+
+        return <p key={idx} className="msg-p">{parseInline(trimmed)}</p>;
+      })}
+    </div>
+  );
+}
+
 export default function ChatPanel({
   isOpen,
   onClose,
@@ -113,7 +187,9 @@ export default function ChatPanel({
               {msg.role === 'user' ? <User size={14} /> : <Bot size={14} />}
             </div>
             <div className="bubble-content">
-              <div className="bubble-text">{msg.text}</div>
+              <div className="bubble-text">
+                <FormattedText text={msg.text} />
+              </div>
               {msg.isSimulated && (
                 <div className="bubble-source-tag">
                   <span>⚡ Synthesized via CelebAI Offline Engine</span>
@@ -145,7 +221,7 @@ export default function ChatPanel({
             </div>
             <div className="bubble-content">
               <div className="bubble-text streaming">
-                {streamingText || 'Thinking and reasoning...'}
+                <FormattedText text={streamingText || 'Thinking and reasoning...'} />
                 <span className="typing-cursor">▋</span>
               </div>
             </div>
@@ -384,7 +460,69 @@ export default function ChatPanel({
           font-size: 0.84rem;
           line-height: 1.55;
           word-break: break-word;
-          white-space: pre-wrap;
+        }
+
+        .msg-rich-content {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+
+        .msg-space {
+          height: 6px;
+        }
+
+        .msg-h3 {
+          font-size: 0.94rem;
+          font-weight: 800;
+          color: var(--primary-light, #DDD6FE);
+          margin-top: 4px;
+          margin-bottom: 2px;
+          line-height: 1.35;
+        }
+
+        .msg-h4 {
+          font-size: 0.86rem;
+          font-weight: 700;
+          color: #FFF;
+          margin-top: 3px;
+          margin-bottom: 1px;
+        }
+
+        .msg-p {
+          font-size: 0.84rem;
+          line-height: 1.5;
+          margin: 0;
+        }
+
+        .msg-li, .msg-num-li {
+          display: flex;
+          align-items: flex-start;
+          gap: 8px;
+          font-size: 0.83rem;
+          line-height: 1.5;
+          margin-left: 2px;
+        }
+
+        .msg-bullet {
+          color: var(--primary, #8B5CF6);
+          font-size: 0.62rem;
+          margin-top: 4px;
+          flex-shrink: 0;
+        }
+
+        .msg-num-badge {
+          background: rgba(139, 92, 246, 0.2);
+          color: #DDD6FE;
+          border-radius: 4px;
+          font-size: 0.68rem;
+          font-family: var(--font-mono);
+          font-weight: 700;
+          padding: 0 4px;
+          min-width: 16px;
+          text-align: center;
+          margin-top: 2px;
+          flex-shrink: 0;
         }
 
         .chat-bubble-row.user .bubble-text {

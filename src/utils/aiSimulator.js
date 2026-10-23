@@ -11,6 +11,54 @@ export function simulateAiChatResponse(currentPlan, query) {
   const budget = currentPlan.budget || 25000;
   const title = currentPlan.title || 'Celebration';
 
+  const trimmed = q.trim();
+
+  // 0. GREETINGS & CASUAL BANTER
+  const isGreeting = /^(hi|hello|hey|greetings|hola|howdy|good morning|good evening|good afternoon|yo|sup)[\s!.]*$/i.test(trimmed);
+  if (isGreeting || trimmed === 'hi' || trimmed === 'hello' || trimmed === 'hey') {
+    return {
+      text: `### Hello! 👋 Welcome to CelebAI
+
+I'm your personal **Celebration Architect & Planning Copilot**. I'm currently assisting you with your **"${title}"** (${theme}).
+
+Here are some of the ways I can help elevate your event today:
+- **💰 Budget Balancing:** Say *"Suggest 3 ways to reduce catering costs by 15%"* or ask how to optimize your venue spend.
+- **⏱️ Timeline Architecture:** Ask for a *"Minute-by-minute photography schedule"* or ceremony run-of-show.
+- **🍸 Signature Touches:** Request *"2 craft cocktails and a mocktail for our ${theme} theme"*.
+- **🎵 Sound & Music:** Ask for *"Entrance song recommendations & reception playlist vibes"*.
+
+Click any quick suggestion chip below, or ask me whatever is on your mind!`
+    };
+  }
+
+  // INTRO / WHO ARE YOU / HELP
+  if (q.includes('who are you') || q.includes('what can you do') || q.includes('help') || q.includes('what are you')) {
+    return {
+      text: `### ✨ About CelebAI
+
+I am **CelebAI**, a GenAI celebration planning copilot designed for **weddings, milestone birthdays, and community festivals**.
+
+#### What I Can Do For You:
+1. **Dynamic Financial Modeling:** Automatically balance your budget across categories and contingency reserves.
+2. **Interactive Timelines:** Build phased milestones from months prior down to day-of ceremony timing.
+3. **Vendor Management:** Organize quotes, contract terms, booking statuses, and payment priorities.
+4. **Experiential Ideation:** Brainstorm custom themes, interactive entertainment, and memorable guest touchpoints.
+
+Whenever you want to modify your plan, just ask me and I'll synthesize live dashboard updates you can apply in one click!`
+    };
+  }
+
+  // GRATITUDE
+  if (q.includes('thank') || q.includes('thx') || q.includes('awesome') || q.includes('great') || q.includes('perfect')) {
+    return {
+      text: `### 🎉 You're Very Welcome!
+
+I'm thrilled I could help make your **"${title}"** planning easier. 
+
+Feel free to ask for more ideas, refine your vendor checklist, or click **Export Dossier** at the top right to download your complete event plan as a polished PDF!`
+    };
+  }
+
   // 1. CATERING & BAR COST REDUCTION
   if (q.includes('catering') || q.includes('reduce') || q.includes('15%') || q.includes('save') || q.includes('trim budget') || q.includes('cut cost')) {
     // Clone and recalculate budget items
@@ -209,14 +257,14 @@ export function simulateAiChatResponse(currentPlan, query) {
 
   // 8. GENERAL INTEL & CONSULTING ADVICE
   return {
-    text: `### 💡 Strategic Recommendation for "${title}":
+    text: `### 💡 Event Architecture Insights for "${title}"
 
-Regarding: *"${query}"*
+Regarding your request: **"${query}"** (Theme: *${theme}* | Target Budget: *$${(currentPlan.budget || budget).toLocaleString()} USD*):
 
-1. **Aesthetic Consistency:** Ensure every touchpoint resonates with your **${theme}** palette. Subtle details (such as ambient candlelight or typography accents) deliver far greater emotional resonance than heavy-handed décor.
-2. **Guest Flow & Pacing:** Keep transitions under 15 minutes. Long pauses between ceremonies, speeches, and dancing cause guest energy to dip.
-3. **Financial Protection:** Always preserve your unallocated contingency reserve to cushion unexpected vendor overages or overtime requests.
+1. **Aesthetic Synergy:** Align every detail with your core palette. Subtle atmospheric touches (warm uplighting, textured linens, custom stationery) create a much more memorable impression than excessive props.
+2. **Guest Experience First:** Prioritize seamless guest transitions and interactive moments (signature cocktails, shared food stations) over lengthy formal pauses.
+3. **Budget Flexibility:** Keep at least 8–10% of your budget in an unallocated contingency buffer to cover last-minute vendor overtime or unexpected equipment needs.
 
-*Tip: Connect your free Google Gemini API Key via "Demo / Add Key" in the top bar to enable live streaming reasoning with multimodal JSON synthesis!*`
+*You can ask me to reallocate budget categories, build a minute-by-minute timeline schedule, or curate vendor specifications!*`
   };
 }

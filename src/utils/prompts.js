@@ -76,14 +76,28 @@ Please return the response formatted as JSON inside a \`\`\`json block according
 }
 
 export function buildRefinementPrompt(currentPlan, userInstruction) {
+  const trimmed = (userInstruction || '').trim().toLowerCase();
+  const isGreeting = /^(hi|hello|hey|greetings|hola|howdy|good morning|good evening|good afternoon|yo|sup)[\s!.]*$/i.test(trimmed);
+
+  if (isGreeting || trimmed === 'hi' || trimmed === 'hello' || trimmed === 'hey') {
+    return `The user is greeting you with: "${userInstruction}".
+Current Event Context: "${currentPlan.title}" (${currentPlan.eventType}, Theme: "${currentPlan.theme}", Budget: $${currentPlan.budget?.toLocaleString() || '25,000'}).
+
+Respond warmly, conversationally, and enthusiastically as CelebAI, their celebration architect and planning copilot.
+Acknowledge their active event, and give 3-4 inspiring, specific ways you can help them right now (e.g., rebalancing budgets, fine-tuning their timeline, brainstorming signature entertainment/cocktails, or vetting vendors).
+Keep it concise, friendly, and structured. Do NOT include a JSON code block for a simple greeting.`;
+  }
+
   return `Here is our current event plan in JSON:
 ${JSON.stringify(currentPlan, null, 2)}
 
 User's Request:
 "${userInstruction}"
 
-Please update the plan accordingly. Adjust the budget allocations, timeline items, vendor checklist, or creative ideas as necessary.
-Return the complete updated plan inside a \`\`\`json block.`;
+Instructions:
+1. Provide a direct, friendly, and expert explanation answering the user's request.
+2. If the user's request involves changing budgets, milestones, vendors, or event details, include the complete modified plan inside a \`\`\`json block adhering to the CelebAI schema.
+3. If the user's request is purely conversational advice (such as song ideas, tips, or questions), provide your expert recommendations and do NOT output an unnecessary JSON block.`;
 }
 
 /**
