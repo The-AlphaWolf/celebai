@@ -455,7 +455,7 @@ export default function TimelinePlanner({ plan, onUpdateTimeline }) {
 
         .node-title {
           font-size: 1.05rem;
-          color: #FFF;
+          color: var(--text-primary);
           margin-bottom: 4px;
         }
 
@@ -476,7 +476,7 @@ export default function TimelinePlanner({ plan, onUpdateTimeline }) {
           background: rgba(0, 0, 0, 0.25);
           border: 1px solid var(--border-medium);
           border-radius: var(--radius-md);
-          color: #FFF;
+          color: var(--text-primary);
           font-size: 0.88rem;
         }
       `}</style>

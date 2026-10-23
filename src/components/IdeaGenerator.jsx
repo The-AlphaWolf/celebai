@@ -190,7 +190,7 @@ export default function IdeaGenerator({ plan, onUpdateIdeas, onAskAiMoreIdeas, i
 
         .ideas-meta h3 {
           font-size: 1.15rem;
-          color: #FFF;
+          color: var(--text-primary);
           margin-bottom: 2px;
         }
 
@@ -261,7 +261,7 @@ export default function IdeaGenerator({ plan, onUpdateIdeas, onAskAiMoreIdeas, i
 
         .idea-title {
           font-size: 1.1rem;
-          color: #FFF;
+          color: var(--text-primary);
           font-weight: 700;
         }
 

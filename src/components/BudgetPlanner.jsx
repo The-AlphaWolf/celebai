@@ -352,7 +352,7 @@ export default function BudgetPlanner({ plan, onUpdateBudget }) {
           font-family: var(--font-heading);
           font-size: 1.8rem;
           font-weight: 800;
-          color: #FFF;
+          color: var(--text-primary);
         }
 
         .stat-subtitle {
@@ -391,7 +391,7 @@ export default function BudgetPlanner({ plan, onUpdateBudget }) {
 
         .panel-title-group h3 {
           font-size: 1.1rem;
-          color: #FFF;
+          color: var(--text-primary);
         }
 
         /* Donut Chart */
@@ -433,7 +433,7 @@ export default function BudgetPlanner({ plan, onUpdateBudget }) {
           font-family: var(--font-heading);
           font-size: 1.15rem;
           font-weight: 800;
-          color: #FFF;
+          color: var(--text-primary);
         }
 
         .donut-label {
@@ -518,7 +518,7 @@ export default function BudgetPlanner({ plan, onUpdateBudget }) {
 
         .cat-name {
           font-weight: 600;
-          color: #FFF;
+          color: var(--text-primary);
         }
 
         .pct-badge {
@@ -545,7 +545,7 @@ export default function BudgetPlanner({ plan, onUpdateBudget }) {
           width: 80px;
           background: transparent;
           border: none;
-          color: #FFF;
+          color: var(--text-primary);
           font-family: var(--font-mono);
           font-size: 0.85rem;
           padding-left: 4px;

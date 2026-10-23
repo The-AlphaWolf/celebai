@@ -284,7 +284,7 @@ export default function VendorChecklist({ plan, onUpdateVendors }) {
           font-family: var(--font-heading);
           font-size: 1.4rem;
           font-weight: 800;
-          color: #FFF;
+          color: var(--text-primary);
           display: block;
         }
 
@@ -414,7 +414,7 @@ export default function VendorChecklist({ plan, onUpdateVendors }) {
 
         .vendor-name {
           font-size: 1.1rem;
-          color: #FFF;
+          color: var(--text-primary);
           font-weight: 700;
         }
 

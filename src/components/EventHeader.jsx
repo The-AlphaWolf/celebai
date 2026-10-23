@@ -213,7 +213,7 @@ export default function EventHeader({ plan, onOpenIntake, onFocusChat, isGenerat
 
         .event-title {
           font-size: 2.15rem;
-          color: #FFF;
+          color: var(--text-primary);
           margin-bottom: 8px;
         }
 

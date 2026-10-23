@@ -153,7 +153,7 @@ export default function Navbar({
           font-size: 1.25rem;
           font-weight: 800;
           letter-spacing: -0.03em;
-          color: #FFF;
+          color: var(--text-primary);
           display: flex;
           align-items: center;
         }
@@ -294,7 +294,7 @@ export default function Navbar({
           border-radius: var(--radius-md);
           background: var(--bg-surface-elevated);
           border: 1px solid var(--border-medium);
-          color: #FFF;
+          color: var(--text-primary);
           font-size: 0.82rem;
           font-weight: 600;
           transition: all var(--transition-fast);

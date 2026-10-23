@@ -488,14 +488,14 @@ export default function App() {
         }
 
         .tab-btn:hover {
-          color: #FFF;
+          color: var(--text-primary);
           background: rgba(255, 255, 255, 0.05);
         }
 
         .tab-btn.active {
-          color: #FFF;
-          background: rgba(255, 255, 255, 0.1);
-          box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+          color: var(--text-primary);
+          background: var(--bg-glass-hover);
+          box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
         }
 
         .tab-badge {
@@ -503,13 +503,13 @@ export default function App() {
           font-family: var(--font-mono);
           padding: 2px 8px;
           border-radius: var(--radius-pill);
-          background: rgba(255, 255, 255, 0.08);
+          background: var(--bg-glass);
           color: var(--text-muted);
         }
 
         .tab-btn.active .tab-badge {
           background: var(--primary);
-          color: #FFF;
+          color: var(--text-inverse);
         }
 
         .btn-chat-toggle {

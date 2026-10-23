@@ -33,10 +33,10 @@ export const THEMES = [
     id: 'cyberpunk',
     name: 'Cyberpunk Synthwave',
     icon: Zap,
-    previewColor: '#F43F5E',
-    accentColor: '#06B6D4',
-    badge: 'Vibrant',
-    mood: 'Neon laser magenta & electric cyan'
+    previewColor: '#FF007F',
+    accentColor: '#00F0FF',
+    badge: 'Retro Neon',
+    mood: 'Laser magenta, electric cyan & synthwave grid'
   },
   {
     id: 'aurora-light',
@@ -44,8 +44,8 @@ export const THEMES = [
     icon: Sun,
     previewColor: '#7C3AED',
     accentColor: '#D946EF',
-    badge: 'Light Mode',
-    mood: 'Opulent ivory & royal amethyst'
+    badge: 'High Contrast',
+    mood: 'High-contrast ivory & royal amethyst'
   }
 ];
 
