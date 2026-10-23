@@ -1,0 +1,1 @@
+Built CelebAI for PromptWars: a GenAI celebration planner that turns chaotic event ideas into master plans with real-time budget charts, phased timelines, and 5 bespoke themes powered by Gemini 2.5 Flash 🎉✨
