@@ -9,7 +9,9 @@ export default function ChatPanel({
   onSendMessage,
   isStreaming,
   streamingText,
-  onApplyPlanUpdate
+  onApplyPlanUpdate,
+  hasApiKey,
+  onOpenApiKeyModal
 }) {
   const [inputText, setInputText] = useState('');
   const messagesEndRef = useRef(null);
@@ -67,8 +69,12 @@ export default function ChatPanel({
           </div>
           <div>
             <h4>CelebAI Assistant</h4>
-            <span className="chat-status-text">
-              {isStreaming ? 'Synthesizing response...' : 'Gemini 2.5 Flash Online'}
+            <span className={`chat-status-text ${hasApiKey ? 'online' : 'demo'}`}>
+              {isStreaming 
+                ? 'Synthesizing response...' 
+                : hasApiKey 
+                  ? 'Gemini 2.5 Flash Online 🟢' 
+                  : 'Interactive Demo Mode ⚡'}
             </span>
           </div>
         </div>
@@ -76,6 +82,18 @@ export default function ChatPanel({
           ✕
         </button>
       </div>
+
+      {/* Demo Mode Notice Bar */}
+      {!hasApiKey && (
+        <div className="chat-demo-bar">
+          <div className="demo-bar-text">
+            <span>⚡ <strong>Demo Mode:</strong> Offline Intel active. Connect key for live Gemini streaming.</span>
+          </div>
+          <button type="button" className="btn-chat-add-key" onClick={onOpenApiKeyModal}>
+            Connect Key
+          </button>
+        </div>
+      )}
 
       {/* Messages Scroll Area */}
       <div className="chat-messages-container">
@@ -96,6 +114,11 @@ export default function ChatPanel({
             </div>
             <div className="bubble-content">
               <div className="bubble-text">{msg.text}</div>
+              {msg.isSimulated && (
+                <div className="bubble-source-tag">
+                  <span>⚡ Synthesized via CelebAI Offline Engine</span>
+                </div>
+              )}
               {msg.updatedPlan && (
                 <div className="bubble-plan-card">
                   <div className="plan-card-header">
@@ -217,8 +240,56 @@ export default function ChatPanel({
 
         .chat-status-text {
           font-size: 0.72rem;
-          color: #34D399;
           font-family: var(--font-mono);
+          font-weight: 600;
+        }
+
+        .chat-status-text.online {
+          color: #34D399;
+        }
+
+        .chat-status-text.demo {
+          color: #FBBF24;
+        }
+
+        .chat-demo-bar {
+          background: rgba(245, 158, 11, 0.12);
+          border-bottom: 1px solid rgba(245, 158, 11, 0.25);
+          padding: 8px 16px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          font-size: 0.74rem;
+          color: #FDE68A;
+        }
+
+        .chat-demo-bar strong {
+          color: #FFF;
+        }
+
+        .btn-chat-add-key {
+          background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
+          color: #111;
+          font-weight: 700;
+          padding: 4px 10px;
+          border-radius: var(--radius-sm);
+          font-size: 0.72rem;
+          white-space: nowrap;
+          cursor: pointer;
+          transition: opacity 150ms ease;
+        }
+
+        .btn-chat-add-key:hover {
+          opacity: 0.9;
+        }
+
+        .bubble-source-tag {
+          font-size: 0.68rem;
+          color: var(--text-muted);
+          font-family: var(--font-mono);
+          margin-top: 2px;
+          padding-left: 2px;
         }
 
         .btn-chat-close {
@@ -311,8 +382,9 @@ export default function ChatPanel({
           padding: 10px 14px;
           border-radius: var(--radius-md);
           font-size: 0.84rem;
-          line-height: 1.5;
+          line-height: 1.55;
           word-break: break-word;
+          white-space: pre-wrap;
         }
 
         .chat-bubble-row.user .bubble-text {

@@ -20,6 +20,7 @@ import {
   hasConfiguredApiKey, 
   generateWithGemini 
 } from './config/gemini';
+import { simulateAiChatResponse } from './utils/aiSimulator';
 
 import { 
   DollarSign, 
@@ -192,30 +193,30 @@ export default function App() {
           }
         ]);
       } else {
-        // Interactive simulated reasoning mode for demo
-        await new Promise((r) => setTimeout(r, 900));
-        const sampleReplies = [
-          `💡 Excellent suggestion! For ${currentPlan.title}, I recommend rebalancing 12% of the budget from décor towards enhanced guest catering experiences.`,
-          `📋 I've reviewed the timeline: moving load-in 90 minutes earlier will prevent vendor congestion and give your photography team golden hour access.`,
-          `✨ Creative twist: Incorporate interactive polaroid guestbooks and bespoke mocktail pairings tailored to your "${currentPlan.theme}" theme!`
-        ];
-        const randomReply = sampleReplies[Math.floor(Math.random() * sampleReplies.length)];
-
+        // High-intelligence context-aware response for interactive demo mode
+        await new Promise((r) => setTimeout(r, 700));
+        const simResult = simulateAiChatResponse(currentPlan, userText);
         setMessages((prev) => [
           ...prev,
           {
             role: 'model',
-            text: randomReply
+            text: simResult.text,
+            updatedPlan: simResult.updatedPlan,
+            isSimulated: true
           }
         ]);
       }
     } catch (err) {
-      console.error('Chat error:', err);
+      console.warn('Gemini chat error, falling back to simulation engine:', err);
+      // Graceful fallback to rich offline engine
+      const simResult = simulateAiChatResponse(currentPlan, userText);
       setMessages((prev) => [
         ...prev,
         {
           role: 'model',
-          text: `⚠️ Notice: ${err.message}. To unlock unlimited live model streaming, configure your free key via "Demo / Add Key" in the top bar.`
+          text: `${simResult.text}\n\n*(Notice: Live Gemini connection issue: "${err.message}". Seamlessly served by CelebAI Intelligence Engine)*`,
+          updatedPlan: simResult.updatedPlan,
+          isSimulated: true
         }
       ]);
     } finally {
@@ -384,6 +385,8 @@ export default function App() {
           showNotification("AI updates merged into your dashboard!", "success");
           confetti({ particleCount: 50, spread: 60, origin: { y: 0.3 } });
         }}
+        hasApiKey={hasApiKey}
+        onOpenApiKeyModal={() => setIsApiKeyModalOpen(true)}
       />
 
       {/* Floating Chat Trigger button when chat is closed */}
