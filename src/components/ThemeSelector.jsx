@@ -64,7 +64,6 @@ export default function ThemeSelector({ currentTheme, onSelectTheme }) {
   }, []);
 
   const activeThemeObj = THEMES.find((t) => t.id === currentTheme) || THEMES[0];
-  const ActiveIcon = activeThemeObj.icon;
 
   return (
     <div className="theme-selector-dropdown" ref={dropdownRef}>
@@ -95,7 +94,6 @@ export default function ThemeSelector({ currentTheme, onSelectTheme }) {
           <div className="theme-list">
             {THEMES.map((theme) => {
               const isSelected = theme.id === currentTheme;
-              const Icon = theme.icon;
 
               return (
                 <button

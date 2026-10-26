@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Users, Plus, CheckCircle, Clock, Trash2, Mail, Phone, DollarSign, Filter } from 'lucide-react';
+import { Plus, Trash2, Filter } from 'lucide-react';
 
 export default function VendorChecklist({ plan, onUpdateVendors }) {
   const [showAddModal, setShowAddModal] = useState(false);

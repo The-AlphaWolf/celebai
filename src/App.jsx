@@ -27,9 +27,7 @@ import {
   Calendar, 
   Users, 
   Sparkles, 
-  MessageSquare, 
-  Check, 
-  AlertCircle 
+  MessageSquare 
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -44,7 +42,7 @@ export default function App() {
   const [isChatOpen, setIsChatOpen] = useState(false);
   
   // API & Generation State
-  const [hasApiKey, setHasApiKey] = useState(false);
+  const [hasApiKey, setHasApiKey] = useState(() => hasConfiguredApiKey());
   const [isGenerating, setIsGenerating] = useState(false);
   const [notification, setNotification] = useState(null);
 
@@ -61,11 +59,10 @@ export default function App() {
     return localStorage.getItem('celebai_theme') || 'cosmic';
   });
 
-  // Check API Key and apply Theme on load
+  // Apply Theme on load
   useEffect(() => {
-    setHasApiKey(hasConfiguredApiKey());
     document.documentElement.setAttribute('data-theme', currentTheme);
-  }, []);
+  }, [currentTheme]);
 
   const handleSelectTheme = (themeId) => {
     setCurrentTheme(themeId);
@@ -265,7 +262,7 @@ export default function App() {
         </div>
       )}
 
-      <main className="app-container">
+      <main className="app-container" id="main-content" role="main">
         {/* Event Header Banner */}
         <EventHeader
           plan={currentPlan}
@@ -276,8 +273,12 @@ export default function App() {
 
         {/* Navigation Tabs */}
         <div className="tabs-container glass-panel">
-          <nav className="tabs-nav" aria-label="Planner Views">
+          <nav className="tabs-nav" role="tablist" aria-label="Planner Views">
             <button
+              role="tab"
+              aria-selected={activeTab === 'budget'}
+              aria-controls="panel-budget"
+              id="tab-budget"
               className={`tab-btn ${activeTab === 'budget' ? 'active' : ''}`}
               onClick={() => setActiveTab('budget')}
             >
@@ -287,6 +288,10 @@ export default function App() {
             </button>
 
             <button
+              role="tab"
+              aria-selected={activeTab === 'timeline'}
+              aria-controls="panel-timeline"
+              id="tab-timeline"
               className={`tab-btn ${activeTab === 'timeline' ? 'active' : ''}`}
               onClick={() => setActiveTab('timeline')}
             >
@@ -296,6 +301,10 @@ export default function App() {
             </button>
 
             <button
+              role="tab"
+              aria-selected={activeTab === 'vendors'}
+              aria-controls="panel-vendors"
+              id="tab-vendors"
               className={`tab-btn ${activeTab === 'vendors' ? 'active' : ''}`}
               onClick={() => setActiveTab('vendors')}
             >
@@ -305,6 +314,10 @@ export default function App() {
             </button>
 
             <button
+              role="tab"
+              aria-selected={activeTab === 'ideas'}
+              aria-controls="panel-ideas"
+              id="tab-ideas"
               className={`tab-btn ${activeTab === 'ideas' ? 'active' : ''}`}
               onClick={() => setActiveTab('ideas')}
             >
@@ -318,6 +331,8 @@ export default function App() {
             className={`btn-chat-toggle ${isChatOpen ? 'chat-is-active' : ''}`}
             onClick={() => setIsChatOpen(!isChatOpen)}
             title="Open Gemini Conversational Assistant"
+            aria-label="Open Gemini Conversational Assistant"
+            aria-expanded={isChatOpen}
           >
             <MessageSquare size={16} />
             <span>AI Copilot</span>
@@ -326,7 +341,7 @@ export default function App() {
         </div>
 
         {/* Tab Content Display */}
-        <div className="tab-view-content">
+        <div className="tab-view-content" role="tabpanel" id={`panel-${activeTab}`} aria-labelledby={`tab-${activeTab}`}>
           {activeTab === 'budget' && (
             <BudgetPlanner
               plan={currentPlan}

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calendar, CheckCircle2, Clock, Plus, Trash2, Check, AlertCircle } from 'lucide-react';
+import { Clock, Plus, Trash2, Check } from 'lucide-react';
 
 export default function TimelinePlanner({ plan, onUpdateTimeline }) {
   const [filter, setFilter] = useState('all');

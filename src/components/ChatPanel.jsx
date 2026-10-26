@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Sparkles, Wand2, User, Bot, AlertCircle, RefreshCw, Check } from 'lucide-react';
+import { Send, Sparkles, User, Bot, Check } from 'lucide-react';
+import { sanitizeInput } from '../utils/security';
 
 function parseInline(str) {
   if (!str) return '';
@@ -100,8 +101,9 @@ export default function ChatPanel({
 
   const handleSend = (e) => {
     e.preventDefault();
-    if (!inputText.trim() || isStreaming) return;
-    onSendMessage(inputText.trim());
+    const sanitized = sanitizeInput(inputText);
+    if (!sanitized || isStreaming) return;
+    onSendMessage(sanitized);
     setInputText('');
   };
 
@@ -138,7 +140,7 @@ export default function ChatPanel({
   if (!isOpen) return null;
 
   return (
-    <div className="chat-dock glass-panel">
+    <div className="chat-dock glass-panel" role="region" aria-label="CelebAI Event Assistant">
       {/* Header */}
       <div className="chat-header">
         <div className="chat-title-group">
@@ -174,7 +176,7 @@ export default function ChatPanel({
       )}
 
       {/* Messages Scroll Area */}
-      <div className="chat-messages-container">
+      <div className="chat-messages-container" aria-live="polite">
         {messages.length === 0 && (
           <div className="chat-welcome-box">
             <div className="welcome-icon">✨</div>
@@ -236,13 +238,14 @@ export default function ChatPanel({
       </div>
 
       {/* Quick Prompt Suggestion Chips */}
-      <div className="prompt-chips-tray">
+      <div className="prompt-chips-tray" role="group" aria-label="Quick Prompt Suggestions">
         {getEventSuggestions().map((chip, idx) => (
           <button
             key={idx}
             className="prompt-chip"
             onClick={() => handleChipClick(chip)}
             disabled={isStreaming}
+            aria-label={`Ask suggestion: ${chip}`}
           >
             {chip}
           </button>
@@ -257,11 +260,13 @@ export default function ChatPanel({
           value={inputText}
           onChange={(e) => setInputText(e.target.value)}
           disabled={isStreaming}
+          aria-label="Message prompt to CelebAI"
         />
         <button 
           type="submit" 
           className="btn-send-chat" 
           disabled={!inputText.trim() || isStreaming}
+          aria-label="Send message to CelebAI"
         >
           <Send size={15} />
         </button>

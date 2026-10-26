@@ -1,18 +1,36 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { DollarSign, Plus, Trash2, PieChart, TrendingUp, AlertTriangle, CheckCircle2 } from 'lucide-react';
 
 export default function BudgetPlanner({ plan, onUpdateBudget }) {
-  const [editingItem, setEditingItem] = useState(null);
   const [newCategory, setNewCategory] = useState({ name: '', allocated: '', color: '#8B5CF6' });
   const [showAddModal, setShowAddModal] = useState(false);
 
   const budgetItems = plan.budgetItems || [];
   const totalBudget = plan.budget || 0;
   
-  const totalAllocated = budgetItems.reduce((acc, item) => acc + (Number(item.allocated) || 0), 0);
-  const totalSpent = budgetItems.reduce((acc, item) => acc + (Number(item.spent) || 0), 0);
-  const remainingBudget = totalBudget - totalAllocated;
-  const allocationPercentage = totalBudget > 0 ? Math.min(100, Math.round((totalAllocated / totalBudget) * 100)) : 0;
+  // Memoized efficiency calculation for budget totals and CSS conic gradient
+  const { totalAllocated, totalSpent, remainingBudget, allocationPercentage, donutBackground } = useMemo(() => {
+    const allocated = budgetItems.reduce((acc, item) => acc + (Number(item.allocated) || 0), 0);
+    const spent = budgetItems.reduce((acc, item) => acc + (Number(item.spent) || 0), 0);
+    const remaining = totalBudget - allocated;
+    const allocPct = totalBudget > 0 ? Math.min(100, Math.round((allocated / totalBudget) * 100)) : 0;
+
+    const gradientStops = budgetItems.map((item, index, arr) => {
+      const priorAllocated = arr.slice(0, index).reduce((acc, prev) => acc + (Number(prev.allocated) || 0), 0);
+      const currAllocated = Number(item.allocated) || 0;
+      const start = allocated > 0 ? (priorAllocated / allocated) * 100 : 0;
+      const end = allocated > 0 ? ((priorAllocated + currAllocated) / allocated) * 100 : 0;
+      return `${item.color || '#8B5CF6'} ${start}% ${end}%`;
+    }).join(', ');
+
+    return {
+      totalAllocated: allocated,
+      totalSpent: spent,
+      remainingBudget: remaining,
+      allocationPercentage: allocPct,
+      donutBackground: gradientStops ? `conic-gradient(${gradientStops})` : 'rgba(255, 255, 255, 0.1)',
+    };
+  }, [budgetItems, totalBudget]);
 
   const handleUpdateItem = (id, field, value) => {
     const numValue = Number(value) || 0;
@@ -52,17 +70,6 @@ export default function BudgetPlanner({ plan, onUpdateBudget }) {
     setNewCategory({ name: '', allocated: '', color: '#8B5CF6' });
     setShowAddModal(false);
   };
-
-  // Generate CSS Conic Gradient for visual Donut Chart
-  let accumulatedPct = 0;
-  const gradientStops = budgetItems.map((item) => {
-    const pct = totalAllocated > 0 ? (item.allocated / totalAllocated) * 100 : 0;
-    const start = accumulatedPct;
-    accumulatedPct += pct;
-    return `${item.color || '#8B5CF6'} ${start}% ${accumulatedPct}%`;
-  }).join(', ');
-
-  const donutBackground = gradientStops ? `conic-gradient(${gradientStops})` : 'rgba(255, 255, 255, 0.1)';
 
   return (
     <div className="budget-planner-wrapper">

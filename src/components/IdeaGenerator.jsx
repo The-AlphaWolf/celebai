@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Sparkles, Bookmark, BookmarkCheck, Plus, Trash2, Wand2, Lightbulb } from 'lucide-react';
+import { Bookmark, BookmarkCheck, Plus, Trash2, Wand2, Lightbulb } from 'lucide-react';
 
 export default function IdeaGenerator({ plan, onUpdateIdeas, onAskAiMoreIdeas, isGenerating }) {
   const [favorites, setFavorites] = useState({});
