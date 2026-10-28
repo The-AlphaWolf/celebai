@@ -2,7 +2,10 @@
 
 CelebAI helps people organize **weddings, birthdays and community events**. You enter the date, headcount, budget, venue, theme and special requirements, and it produces a complete plan: a budget split, a dated timeline, a vendor checklist and ideas. It then keeps the plan honest as things change (more guests, a smaller budget, a new date).
 
-- **Chosen vertical:** PromptWars Challenge 5, *Celebration & Event Planner*.
+## Chosen vertical
+
+**Celebration & Event Planner** (PromptWars Challenge 5): a GenAI assistant for weddings, birthdays and community events that covers budgets, timelines, vendor checklists and personalized ideas.
+
 - **Persona:** someone organizing a celebration without professional planning experience, who needs to know *how much to spend on what, what to book first, and by when*.
 - **Static demo:** <https://the-alphawolf.github.io/celebai/>. GitHub Pages has no API server, so the demo is built with `VITE_STATIC_DEMO=true` and runs entirely on the in-browser planning engine, with no network calls.
 
@@ -39,7 +42,7 @@ The design splits the work into two parts. Decisions are made by a **determinist
 - overdue milestones
 - categories where spending exceeds the allocation
 
-### How it works
+## How the solution works
 
 ```mermaid
 flowchart LR
@@ -56,7 +59,7 @@ flowchart LR
 2. **Chat:** `POST /api/chat` sends a compact plan plus the user's message (inside `<user_input>` tags) to Gemini. A proposed edit is a patch: budget lines are matched by id (lines the model leaves out are kept), then the result is validated by `normalizePlan()` and re-balanced by `reconcileBudget()`. The user sees it as a proposal and applies it with one click.
 3. **No key, Gemini error, or no server:** the same engine answers, either on the server or in the browser. Each reply is labelled with its source. Static builds (`VITE_STATIC_DEMO=true`, used for GitHub Pages) skip the API entirely.
 
-## Assumptions
+## Assumptions made
 
 - Amounts are in USD. Budget shares, per-guest minimums ($90 wedding, $40 birthday, $15 community) and vendor lead times are general planning heuristics, not market quotes. They live in `profiles.js` so they can be tuned.
 - If no date is given, the plan assumes the recommended lead time for that event type and says so in the summary.
