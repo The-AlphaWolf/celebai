@@ -116,7 +116,7 @@ export default function TimelinePlanner({ plan, onUpdateTimeline, today }) {
                   type="button"
                   className={`node-status-dot ${isDone ? 'dot-done' : isActive ? 'dot-active' : 'dot-upcoming'}`}
                   onClick={() => setStatus(item.id, NEXT_STATUS[item.status])}
-                  aria-label={`${item.title}: ${STATUS_LABEL[item.status]}. Change to ${STATUS_LABEL[NEXT_STATUS[item.status]]}`}
+                  aria-label={`${index + 1}. ${item.title}: ${STATUS_LABEL[item.status]}. Change to ${STATUS_LABEL[NEXT_STATUS[item.status]]}`}
                 >
                   {isDone ? <Check size={14} aria-hidden="true" /> : isActive ? <Clock size={13} aria-hidden="true" /> : <span className="dot-index" aria-hidden="true">{index + 1}</span>}
                 </button>

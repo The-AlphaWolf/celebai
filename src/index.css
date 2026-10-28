@@ -1116,3 +1116,20 @@ dd {
   background: var(--primary-gradient, var(--primary));
   border-radius: var(--radius-pill);
 }
+
+/* Light theme: the pastel accent text used on dark themes drops to ~1.2:1 on light tints. */
+[data-theme="aurora-light"] :is(.badge-idea-cat, .badge-category, .phase-badge, .text-contact, .status-pill.in-progress, .msg-num-badge, .chat-bubble-row.model .bubble-avatar) {
+  color: #5B21B6;
+}
+[data-theme="aurora-light"] :is(.progress-stat-badge, .status-pill.completed, .status-select.booked, .plan-card-header, .toast-success, .api-key-btn.connected, .text-cost) {
+  color: #065F46;
+}
+[data-theme="aurora-light"] :is(.priority-high, .chat-demo-bar, .theme-wedding .badge-type) {
+  color: #92400E;
+}
+[data-theme="aurora-light"] :is(.priority-critical, .status-pill.overdue) {
+  color: #991B1B;
+}
+[data-theme="aurora-light"] .priority-medium {
+  color: #1E40AF;
+}

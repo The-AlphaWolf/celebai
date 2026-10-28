@@ -146,7 +146,17 @@ export function buildTimeline(intake, { eventDate, daysUntil }) {
   });
 }
 
-const DIETARY_PATTERN = /vegan|vegetarian|gluten|halal|kosher|allerg|dairy|nut/gi;
+// Word-anchored so "minutes" or "donuts" do not read as a nut allergy.
+const DIETARY_NEEDS = [
+  [/\bvegan/i, 'vegan'],
+  [/\bvegetarian/i, 'vegetarian'],
+  [/\bgluten/i, 'gluten-free'],
+  [/\bhalal/i, 'halal'],
+  [/\bkosher/i, 'kosher'],
+  [/\b(dairy|lactose)/i, 'dairy-free'],
+  [/\b(pea)?nuts?\b/i, 'nut-free'],
+  [/\ballerg/i, 'other allergies'],
+];
 
 export function buildVendors(intake, { budgetItems, setting, daysUntil }) {
   const profile = getProfile(intake.eventType);
@@ -157,7 +167,7 @@ export function buildVendors(intake, { budgetItems, setting, daysUntil }) {
     specs.push({ budgetKey: null, category: 'Activities', name: 'Kids entertainer or supervised play area', leadDays: 30, priority: 'Medium' });
   }
 
-  const dietary = [...new Set((intake.notes.match(DIETARY_PATTERN) || []).map((word) => word.toLowerCase()))];
+  const dietary = DIETARY_NEEDS.filter(([pattern]) => pattern.test(intake.notes)).map(([, label]) => label);
 
   return specs.map((spec, index) => {
     const line = budgetItems.find((item) => item.key === spec.budgetKey);
@@ -188,12 +198,21 @@ export function pickIdeas(intake, { setting, count = 4, excludeTitles = [] } = {
   const profile = getProfile(intake.eventType);
   const text = `${intake.title} ${intake.theme} ${intake.notes} ${intake.location} ${setting || ''}`.toLowerCase();
   const excluded = new Set(excludeTitles.map((title) => title.toLowerCase()));
-  return profile.ideas
+  // The library only knows fixed tags, so a free-text theme also gets one idea built from its own words.
+  const themeIdea = intake.theme && {
+    category: 'Theme',
+    title: `Theme thread: ${intake.theme}`,
+    description: `Carry "${intake.theme}" through the invitations, signage, table names and one signature dish or drink so every guest touchpoint feels part of it.`,
+  };
+  const library = profile.ideas
     .map((idea, index) => ({ idea, index, score: idea.tags.filter((tag) => text.includes(tag)).length }))
-    .filter(({ idea }) => !excluded.has(idea.title.toLowerCase()))
     .sort((a, b) => b.score - a.score || a.index - b.index)
+    .map(({ idea }) => idea);
+  const ordered = themeIdea ? [...library.slice(0, count - 1), themeIdea, ...library.slice(count - 1)] : library;
+  return ordered
+    .filter((idea) => !excluded.has(idea.title.toLowerCase()))
     .slice(0, count)
-    .map(({ idea }, i) => ({ id: `c${i + 1}`, category: idea.category, title: idea.title, description: idea.description }));
+    .map((idea, i) => ({ id: `c${i + 1}`, category: idea.category, title: idea.title, description: idea.description }));
 }
 
 // ---------- plan generation ----------

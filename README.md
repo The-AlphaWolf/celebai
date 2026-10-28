@@ -27,7 +27,7 @@ The design splits the work into two parts. Decisions are made by a **determinist
 | Venue or setting | Outdoor (stated, or inferred from words like *garden*, *park*, *beach*) adds a *Tents, Power & Weather Backup* line and a rental vendor, and raises the reserve by 5% (mixed setting: +3%) |
 | Guest count ≥ 150 | Adds *Security & Guest Logistics* and a stewards vendor |
 | Days until the event | Short notice raises the reserve by 5%. Milestones are scheduled backwards from the date and compressed proportionally when time is short. Vendors whose usual booking lead time has already passed are marked **Critical** |
-| Notes | Dietary words (vegan, gluten, halal, allergy…) go into the caterer brief. Mentions of kids or family add a kids' activity vendor. Theme and notes keywords rank the idea library |
+| Notes | Dietary needs (vegan, gluten-free, halal, nut, allergies…) go into the caterer brief. Mentions of kids or family add a kids' activity vendor. Theme and notes keywords rank the idea library, and a free-text theme adds one idea built from its own words |
 | Plan changes | Budget changes rescale all lines. Headcount changes rescale per-guest lines and take the difference from the reserve. Trims move savings into the reserve. Plans the engine creates or adjusts always sum exactly to the budget; manual edits in the table can over-allocate, and the insights panel flags it |
 
 `analyzePlan()` checks the current plan and reports **planner insights**:
@@ -96,13 +96,13 @@ The suite lives in [`tests/`](tests):
 - **`ui/`:** the full app in jsdom. Covers the intake flow, keyboard tab navigation, dialog focus trap with Escape and focus return, applying assistant proposals, corrupted or unavailable storage, component behaviour, and automated `axe-core` checks with and without a dialog open.
 - **`utils/`:** content of the PDF export.
 
-CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs lint, coverage, `npm audit` (production dependencies) and the build on every push. It deploys Pages only after these pass.
+CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs lint, coverage, `npm audit` (production dependencies), a Docker image build and the app build on every push. It deploys Pages only after these pass.
 
 ## Security
 
 - **No secrets in the browser.** The Gemini key is read from the server environment only. `.env` is git-ignored.
 - **Validation at every boundary.** `normalizePlan()` / `normalizeIntake()` enforce types, enums, ranges, string lengths, list sizes and colour formats on form input, saved plans, request bodies and model output. Invalid plans are rejected and malformed fields repaired.
-- **Prompt-injection hardening.** User text is delimited and declared as data in the system prompt. The model may only return schema-shaped JSON. Proposed numbers are re-validated and re-balanced.
+- **Prompt-injection hardening.** User text is delimited and declared as data in the system prompt, and delimiter tags are stripped from user text so it cannot close the block early. The model may only return schema-shaped JSON. Proposed numbers are re-validated and re-balanced.
 - **HTTP hardening.** `helmet` sets a strict Content-Security-Policy (`script-src 'self'`, `frame-ancestors 'none'`, `object-src 'none'`) and other headers. There is also a 64 KB body limit, a per-IP rate limit (30 requests/min on `/api`) and generic error messages. `TRUST_PROXY=1` behind exactly one proxy (Cloud Run) so rate limiting sees real client IPs.
 - **Safe rendering.** Assistant markdown is rendered as React elements (no `dangerouslySetInnerHTML`). A test checks that HTML in replies stays text.
 - Note: GitHub Pages cannot send these headers. The CSP applies when the app is served by `server/`.
@@ -115,8 +115,8 @@ CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs lint, coverage,
 - Every form control has a label. Icon buttons have names. The event-type picker uses real radio buttons.
 - The CSS donut chart has a text alternative and a legend. Progress uses native `<progress>`. Status messages go to a polite live region.
 - `prefers-reduced-motion` disables animations and confetti. Focus rings are visible.
-- Theme text tokens (`--text-secondary`, `--text-muted`) measure at least 4.5:1 against every theme's canvas and card backgrounds (WCAG AA for body text). Hard-coded accent colours inside individual components have not been fully audited.
-- Checked automatically by oxlint `jsx-a11y` rules and `axe-core` tests. jsdom cannot measure colour contrast, so the token ratios were calculated separately.
+- Theme text tokens (`--text-secondary`, `--text-muted`) measure at least 4.5:1 against every theme's canvas and card backgrounds (WCAG AA for body text). The light theme overrides the pastel badge colours used on dark themes.
+- Checked automatically by oxlint `jsx-a11y` rules and `axe-core` tests on every tab in jsdom. jsdom has no layout, so contrast and other layout-dependent rules were checked by running axe-core in Chromium at 362 px and 1366 px wide, on every theme, tab, the chat panel and the intake dialog (0 violations). Axe cannot score text over gradients or translucent panels; that text was compared only approximately against each theme's solid surface colours.
 
 ## Efficiency
 

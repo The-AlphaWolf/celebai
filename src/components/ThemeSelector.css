@@ -171,7 +171,13 @@
 }
 
 @media (max-width: 640px) {
+  /* Visually hidden, not display:none: the name is the button's accessible label. */
   .theme-active-name {
-    display: none;
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
   }
 }

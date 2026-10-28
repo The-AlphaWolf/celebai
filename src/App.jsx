@@ -199,7 +199,7 @@ export default function App() {
       </Suspense>
 
       {!isChatOpen && (
-        <button type="button" className="floating-ai-trigger" onClick={() => setIsChatOpen(true)} aria-label="Open planning assistant">
+        <button type="button" className="floating-ai-trigger" onClick={() => setIsChatOpen(true)} aria-label="Ask CelebAI">
           <Sparkles size={20} className="float-icon" aria-hidden="true" />
           <span className="float-label" aria-hidden="true">Ask CelebAI</span>
         </button>

@@ -110,7 +110,7 @@ describe('App', () => {
 
   it('applies an assistant proposal from the offline engine', async () => {
     await renderApp();
-    fireEvent.click(screen.getByRole('button', { name: 'Open planning assistant' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Ask CelebAI' }));
     const assistant = await screen.findByRole('complementary', { name: 'Planning assistant' });
     fireEvent.change(within(assistant).getByLabelText('Message the planning assistant'), { target: { value: 'Set budget to 40000' } });
     fireEvent.click(within(assistant).getByRole('button', { name: 'Send message' }));
@@ -136,10 +136,13 @@ describe('App', () => {
     expect(within(screen.getByRole('tabpanel')).getAllByRole('listitem')).toHaveLength(1);
   });
 
-  it('has no detectable accessibility violations', async () => {
+  it('has no detectable accessibility violations on any tab', async () => {
     const { container } = await renderApp();
-    const results = await axe.run(container, { rules: { 'color-contrast': { enabled: false } } });
-    expect(results.violations.map((violation) => `${violation.id}: ${violation.nodes[0]?.html}`)).toEqual([]);
+    for (const tab of screen.getAllByRole('tab')) {
+      fireEvent.click(tab);
+      const results = await axe.run(container, { rules: { 'color-contrast': { enabled: false } } });
+      expect(results.violations.map((violation) => `${tab.textContent}: ${violation.id}: ${violation.nodes[0]?.html}`)).toEqual([]);
+    }
   });
 
   it('has no accessibility violations with a dialog open', async () => {

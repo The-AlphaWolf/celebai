@@ -97,7 +97,7 @@ describe('TimelinePlanner', () => {
     const onUpdate = vi.fn();
     render(<TimelinePlanner plan={plan} today={TODAY} onUpdateTimeline={onUpdate} />);
     const first = plan.timeline[0];
-    fireEvent.click(screen.getByRole('button', { name: `${first.title}: Upcoming. Change to In progress` }));
+    fireEvent.click(screen.getByRole('button', { name: `1. ${first.title}: Upcoming. Change to In progress` }));
     expect(onUpdate.mock.calls[0][0][0].status).toBe('in-progress');
     fireEvent.click(screen.getByRole('button', { name: `Delete milestone ${first.title}` }));
     expect(onUpdate.mock.calls[1][0]).toHaveLength(plan.timeline.length - 1);

@@ -139,7 +139,11 @@ describe('generatePlan', () => {
   it('reacts to notes: dietary needs on the caterer and a kids vendor', () => {
     const plan = generatePlan({ ...baseWedding, notes: 'Vegan and gluten-free menu, lots of kids' }, TODAY);
     const caterer = plan.vendors.find((vendor) => vendor.category === 'Catering');
-    expect(caterer.notes).toMatch(/vegan, gluten/);
+    expect(caterer.notes).toMatch(/Confirm options for: vegan, gluten-free\./);
+    const allergy = generatePlan({ ...baseWedding, notes: 'Two guests with a nut allergy; speeches last 10 minutes' }, TODAY);
+    expect(allergy.vendors.find((vendor) => vendor.category === 'Catering').notes).toMatch(/Confirm options for: nut-free, other allergies\./);
+    const none = generatePlan({ ...baseWedding, notes: 'Speeches last 10 minutes, donuts at midnight' }, TODAY);
+    expect(none.vendors.find((vendor) => vendor.category === 'Catering').notes).not.toMatch(/Confirm options/);
     expect(caterer.notes).toMatch(/per head/);
     expect(plan.vendors.some((vendor) => /Kids/.test(vendor.name))).toBe(true);
   });
@@ -159,6 +163,15 @@ describe('pickIdeas', () => {
     expect(ideas[0].title).toMatch(/Reusable cup|maker workshops/);
     const more = pickIdeas(intake, { setting: 'outdoor', excludeTitles: ideas.map((idea) => idea.title) });
     expect(more.some((idea) => ideas.map((i) => i.title).includes(idea.title))).toBe(false);
+  });
+
+  it('builds one idea from a free-text theme the tag library does not know', () => {
+    const intake = normalizeIntake({ eventType: 'birthday', theme: 'Jungle safari' });
+    const ideas = pickIdeas(intake);
+    expect(ideas).toHaveLength(4);
+    expect(ideas.at(-1)).toMatchObject({ category: 'Theme', title: 'Theme thread: Jungle safari' });
+    expect(ideas.at(-1).description).toContain('"Jungle safari"');
+    expect(pickIdeas(normalizeIntake({ eventType: 'birthday' })).some((idea) => idea.category === 'Theme')).toBe(false);
   });
 });
 
