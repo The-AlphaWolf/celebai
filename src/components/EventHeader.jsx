@@ -1,300 +1,102 @@
-import React from 'react';
-import { Calendar, Users, MapPin, DollarSign, Sparkles, Wand2, PlusCircle } from 'lucide-react';
-import confetti from 'canvas-confetti';
+import { useMemo } from 'react';
+import { Calendar, Users, MapPin, DollarSign, Sparkles, Wand2, PlusCircle, AlertTriangle, CheckCircle2, Info } from 'lucide-react';
+import { analyzePlan, getProfile } from '../domain/planner';
+import './EventHeader.css';
 
-export default function EventHeader({ plan, onOpenIntake, onFocusChat, isGenerating }) {
-  if (!plan) return null;
+const TYPE_BADGE = { wedding: '💍 Wedding', birthday: '🎂 Birthday', community: '🎪 Community event' };
+const INSIGHT_ICON = { warning: AlertTriangle, success: CheckCircle2, info: Info };
 
-  const triggerConfetti = () => {
-    confetti({
-      particleCount: 80,
-      spread: 70,
-      origin: { y: 0.3 }
-    });
-  };
+function countdownLabel(daysUntil) {
+  if (daysUntil === null) return 'Date not set';
+  if (daysUntil === 0) return 'Today';
+  if (daysUntil < 0) return `${-daysUntil} days ago`;
+  return `${daysUntil} days to go`;
+}
 
-  const getThemeClass = () => {
-    if (plan.eventType === 'wedding') return 'theme-wedding';
-    if (plan.eventType === 'birthday') return 'theme-birthday';
-    return 'theme-community';
-  };
+export default function EventHeader({ plan, today, onOpenIntake, onOpenChat, isBusy }) {
+  const { daysUntil, insights } = useMemo(() => analyzePlan(plan, today), [plan, today]);
+  const perGuest = plan.guestCount ? Math.round(plan.budget / plan.guestCount) : 0;
 
   return (
-    <div className={`event-header-card glass-panel ${getThemeClass()}`}>
+    <section className={`event-header-card glass-panel theme-${plan.eventType}`} aria-labelledby="event-title">
       <div className="header-top-row">
         <div className="header-badges">
-          <span className="badge badge-type">
-            {plan.eventType === 'wedding' ? '💍 Wedding Celebration' : 
-             plan.eventType === 'birthday' ? '🎂 Birthday Milestone' : 
-             '🎪 Community Gathering'}
-          </span>
+          <span className="badge badge-type">{TYPE_BADGE[plan.eventType] || getProfile(plan.eventType).label}</span>
           {plan.theme && (
             <span className="badge badge-theme">
-              <Sparkles size={12} />
+              <Sparkles size={12} aria-hidden="true" />
               <span>{plan.theme}</span>
             </span>
           )}
         </div>
 
         <div className="header-actions">
-          <button 
-            className="btn-header-action" 
-            onClick={triggerConfetti}
-            title="Celebrate this plan!"
-          >
-            <span>🎉 Celebrate</span>
+          <button type="button" className="btn-header-action" onClick={onOpenChat} disabled={isBusy}>
+            <Wand2 size={14} aria-hidden="true" />
+            <span>Ask the assistant</span>
           </button>
-
-          <button 
-            className="btn-header-action" 
-            onClick={onFocusChat}
-            disabled={isGenerating}
-            title="Chat with CelebAI to adjust this plan"
-          >
-            <Wand2 size={14} />
-            <span>Refine Plan</span>
-          </button>
-
-          <button 
-            className="btn-primary btn-header-new" 
-            onClick={onOpenIntake}
-            disabled={isGenerating}
-            title="Design a brand new custom celebration"
-          >
-            <PlusCircle size={15} />
-            <span>New Custom Plan</span>
+          <button type="button" className="btn-primary btn-header-new" onClick={onOpenIntake} disabled={isBusy}>
+            <PlusCircle size={15} aria-hidden="true" />
+            <span>New plan</span>
           </button>
         </div>
       </div>
 
       <div className="header-main-content">
-        <h1 className="event-title">{plan.title}</h1>
+        <h1 id="event-title" className="event-title">{plan.title}</h1>
         {plan.summary && <p className="event-summary">{plan.summary}</p>}
       </div>
 
       <div className="header-meta-grid">
         <div className="meta-pill">
-          <Calendar size={16} className="meta-icon" />
+          <Calendar size={16} className="meta-icon" aria-hidden="true" />
           <div className="meta-text">
             <span className="meta-label">Date</span>
-            <span className="meta-value">{plan.date || 'TBD'}</span>
+            <span className="meta-value">
+              {plan.date ? <time dateTime={plan.date}>{plan.date}</time> : 'TBD'} · {countdownLabel(daysUntil)}
+            </span>
           </div>
         </div>
-
         <div className="meta-pill">
-          <Users size={16} className="meta-icon" />
+          <Users size={16} className="meta-icon" aria-hidden="true" />
           <div className="meta-text">
-            <span className="meta-label">Guest Count</span>
-            <span className="meta-value">{plan.guestCount} Attendees</span>
+            <span className="meta-label">Guests</span>
+            <span className="meta-value">{plan.guestCount}</span>
           </div>
         </div>
-
         <div className="meta-pill">
-          <DollarSign size={16} className="meta-icon" />
+          <DollarSign size={16} className="meta-icon" aria-hidden="true" />
           <div className="meta-text">
-            <span className="meta-label">Target Budget</span>
-            <span className="meta-value">${(plan.budget || 0).toLocaleString()} USD</span>
+            <span className="meta-label">Budget</span>
+            <span className="meta-value">${plan.budget.toLocaleString('en-US')} (${perGuest.toLocaleString('en-US')}/guest)</span>
           </div>
         </div>
-
         <div className="meta-pill">
-          <MapPin size={16} className="meta-icon" />
+          <MapPin size={16} className="meta-icon" aria-hidden="true" />
           <div className="meta-text">
-            <span className="meta-label">Location / Atmosphere</span>
-            <span className="meta-value">{plan.location || 'Private Venue'}</span>
+            <span className="meta-label">Venue · setting</span>
+            <span className="meta-value">{plan.location || 'Venue TBD'} · {plan.setting}</span>
           </div>
         </div>
       </div>
 
-      <style>{`
-        .event-header-card {
-          margin-top: 24px;
-          margin-bottom: 24px;
-          padding: 28px 32px;
-          position: relative;
-          overflow: hidden;
-          background: var(--bg-card);
-        }
-
-        .theme-wedding {
-          border-left: 4px solid var(--wedding-gold);
-        }
-
-        .theme-birthday {
-          border-left: 4px solid var(--birthday-coral);
-        }
-
-        .theme-community {
-          border-left: 4px solid var(--community-violet);
-        }
-
-        .header-top-row {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          flex-wrap: wrap;
-          gap: 16px;
-          margin-bottom: 16px;
-        }
-
-        .header-badges {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          flex-wrap: wrap;
-        }
-
-        .badge-type {
-          background: rgba(255, 255, 255, 0.08);
-          color: #FFF;
-          font-weight: 700;
-          letter-spacing: 0.04em;
-        }
-
-        .theme-wedding .badge-type {
-          background: rgba(245, 158, 11, 0.15);
-          color: #FDE68A;
-          border: 1px solid rgba(245, 158, 11, 0.35);
-        }
-
-        .theme-birthday .badge-type {
-          background: rgba(244, 63, 94, 0.15);
-          color: #FECDD3;
-          border: 1px solid rgba(244, 63, 94, 0.35);
-        }
-
-        .theme-community .badge-type {
-          background: rgba(99, 102, 241, 0.15);
-          color: #C7D2FE;
-          border: 1px solid rgba(99, 102, 241, 0.35);
-        }
-
-        .badge-theme {
-          background: rgba(255, 255, 255, 0.04);
-          color: var(--text-secondary);
-          border: 1px solid var(--border-subtle);
-          font-weight: 500;
-        }
-
-        .header-actions {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-        }
-
-        .btn-header-action {
-          display: inline-flex;
-          align-items: center;
-          gap: 6px;
-          padding: 8px 16px;
-          border-radius: var(--radius-md);
-          background: rgba(255, 255, 255, 0.05);
-          border: 1px solid var(--border-subtle);
-          color: var(--text-primary);
-          font-size: 0.85rem;
-          font-weight: 600;
-          transition: all var(--transition-fast);
-        }
-
-        .btn-header-action:hover:not(:disabled) {
-          background: rgba(255, 255, 255, 0.09);
-          border-color: var(--border-medium);
-          transform: translateY(-1px);
-        }
-
-        .btn-header-new {
-          padding: 8px 18px;
-          font-size: 0.85rem;
-        }
-
-        .header-main-content {
-          margin-bottom: 24px;
-        }
-
-        .event-title {
-          font-size: 2.15rem;
-          color: var(--text-primary);
-          margin-bottom: 8px;
-        }
-
-        .event-summary {
-          font-size: 1rem;
-          color: var(--text-secondary);
-          max-width: 900px;
-          line-height: 1.6;
-        }
-
-        .header-meta-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-          gap: 16px;
-          padding-top: 20px;
-          border-top: 1px solid var(--border-subtle);
-        }
-
-        .meta-pill {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          padding: 10px 16px;
-          background: rgba(255, 255, 255, 0.02);
-          border: 1px solid var(--border-subtle);
-          border-radius: var(--radius-md);
-        }
-
-        .meta-icon {
-          color: var(--text-muted);
-          flex-shrink: 0;
-        }
-
-        .theme-wedding .meta-icon {
-          color: var(--wedding-gold);
-        }
-
-        .theme-birthday .meta-icon {
-          color: var(--birthday-coral);
-        }
-
-        .theme-community .meta-icon {
-          color: var(--community-violet);
-        }
-
-        .meta-text {
-          display: flex;
-          flex-direction: column;
-        }
-
-        .meta-label {
-          font-size: 0.72rem;
-          text-transform: uppercase;
-          letter-spacing: 0.05em;
-          color: var(--text-muted);
-          font-weight: 600;
-        }
-
-        .meta-value {
-          font-size: 0.95rem;
-          font-weight: 700;
-          color: var(--text-primary);
-        }
-
-        @media (max-width: 768px) {
-          .event-header-card {
-            padding: 20px;
-          }
-          .event-title {
-            font-size: 1.6rem;
-          }
-          .header-top-row {
-            flex-direction: column;
-            align-items: flex-start;
-          }
-          .header-actions {
-            width: 100%;
-            justify-content: flex-start;
-          }
-        }
-      `}</style>
-    </div>
+      <div className="insights-panel" aria-labelledby="insights-title">
+        <h2 id="insights-title" className="insights-title">Planner insights</h2>
+        <ul className="insights-list">
+          {insights.map((insight) => {
+            const Icon = INSIGHT_ICON[insight.level];
+            return (
+              <li key={insight.message} className={`insight insight-${insight.level}`}>
+                <Icon size={15} aria-hidden="true" />
+                <span>
+                  <span className="visually-hidden">{insight.level}: </span>
+                  {insight.message}
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+    </section>
   );
 }

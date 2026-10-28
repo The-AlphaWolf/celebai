@@ -1,457 +1,159 @@
-import React, { useState } from 'react';
-import { X, Sparkles, Wand2, Calendar, Users, DollarSign, MapPin, Heart, Cake } from 'lucide-react';
+import { useState } from 'react';
+import { Wand2, Calendar, Users, DollarSign, MapPin } from 'lucide-react';
+import Modal from './Modal';
+import { getPresetIntake, presetLabel, PRESET_TYPES } from '../domain/presets';
+import { LIMITS } from '../domain/constants';
+import './Modal.css';
+import './IntakeFormModal.css';
 
-export default function IntakeFormModal({ isOpen, onClose, onGenerate, isGenerating }) {
-  const [formData, setFormData] = useState({
-    eventType: 'wedding',
-    title: 'Emerald Garden Estate Wedding',
-    date: '2026-11-20',
-    guestCount: 120,
-    budget: 22000,
-    location: 'Coastal botanical sanctuary or glasshouse',
-    theme: 'Earthy luxury, cascading foliage, warm amber lanterns',
-    notes: 'Prioritize farm-to-table culinary stations, acoustic strings during vows, and an energetic late-night DJ.'
-  });
+const EVENT_OPTIONS = [
+  { value: 'wedding', icon: '💍', title: 'Wedding', description: 'Ceremonies and receptions' },
+  { value: 'birthday', icon: '🎂', title: 'Birthday', description: 'Milestones and parties' },
+  { value: 'community', icon: '🎪', title: 'Community', description: 'Festivals, fairs and fundraisers' },
+];
 
-  if (!isOpen) return null;
+export default function IntakeFormModal({ onClose, onGenerate, isGenerating }) {
+  const [formData, setFormData] = useState(() => getPresetIntake('wedding'));
+  const update = (field) => (event) => setFormData((prev) => ({ ...prev, [field]: event.target.value }));
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    onGenerate(formData);
-  };
-
-  const applyPreset = (type) => {
-    if (type === 'wedding') {
-      setFormData({
-        eventType: 'wedding',
-        title: 'Sunset Vineyard & Tuscan Villa Wedding',
-        date: '2026-10-18',
-        guestCount: 135,
-        budget: 32000,
-        location: 'Rolling vineyard hills with al-fresco stone courtyard',
-        theme: 'Tuscan rustic chic, olive branch garlands, terracotta & gold',
-        notes: 'Includes woodfired pizza after-party and private wine tasting.'
-      });
-    } else if (type === 'birthday') {
-      setFormData({
-        eventType: 'birthday',
-        title: 'Cyberpunk Neon Nights 25th Birthday',
-        date: '2026-12-05',
-        guestCount: 75,
-        budget: 7000,
-        location: 'Industrial warehouse loft with exposed brick and high ceilings',
-        theme: 'Neon cyberpunk, vaporwave aesthetics, LED infinity tunnels',
-        notes: 'Interactive retro arcade cabinets, custom craft cocktail bar, and bass-heavy DJ.'
-      });
-    } else {
-      setFormData({
-        eventType: 'community',
-        title: 'Riverside Community Harvest & Maker Gala',
-        date: '2026-09-26',
-        guestCount: 350,
-        budget: 16000,
-        location: 'Historic Riverfront Park & Open-Air Amphitheater',
-        theme: 'Zero-waste eco-festival, local artisan craft, indie acoustic stages',
-        notes: 'Family-friendly interactive workshops, solar-powered sound stage, and food truck alley.'
-      });
-    }
+  const handleSubmit = (event) => {
+    event.preventDefault();
+    onGenerate({ ...formData, guestCount: Number(formData.guestCount), budget: Number(formData.budget) });
   };
 
   return (
-    <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal-card glass-panel" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <div className="modal-title-group">
-            <div className="intake-icon-badge">
-              <Sparkles size={18} />
-            </div>
-            <div>
-              <h3>AI Event Architecture Studio</h3>
-              <p>Configure parameters for Gemini 2.5 Flash to synthesize your master plan</p>
-            </div>
+    <Modal
+      title="Plan a new event"
+      description="Tell us the essentials. The planning engine sizes the budget, schedule and vendors to your date, headcount and venue."
+      onClose={onClose}
+      size="lg"
+    >
+      <fieldset className="preset-bar" aria-label="Fill the form with a sample event">
+        <span className="preset-label">Samples:</span>
+        {PRESET_TYPES.map((type) => (
+          <button key={type} type="button" className="preset-btn" onClick={() => setFormData(getPresetIntake(type))}>
+            {presetLabel(type)}
+          </button>
+        ))}
+      </fieldset>
+
+      <form onSubmit={handleSubmit} className="modal-body">
+        <fieldset className="form-group">
+          <legend>Event type</legend>
+          <div className="event-type-grid">
+            {EVENT_OPTIONS.map((option) => (
+              <label key={option.value} className={`type-card ${formData.eventType === option.value ? `selected ${option.value}` : ''}`}>
+                <input
+                  type="radio"
+                  name="eventType"
+                  value={option.value}
+                  checked={formData.eventType === option.value}
+                  onChange={update('eventType')}
+                  className="visually-hidden"
+                />
+                <span className="type-icon" aria-hidden="true">{option.icon}</span>
+                <span className="type-title">{option.title}</span>
+                <span className="type-desc">{option.description}</span>
+              </label>
+            ))}
           </div>
-          <button className="btn-close" onClick={onClose} aria-label="Close modal">
-            <X size={18} />
-          </button>
-        </div>
+        </fieldset>
 
-        {/* Quick Presets */}
-        <div className="preset-bar">
-          <span className="preset-label">Quick Presets:</span>
-          <button type="button" className="preset-btn" onClick={() => applyPreset('wedding')}>
-            <Heart size={12} /> Tuscan Vineyard
-          </button>
-          <button type="button" className="preset-btn" onClick={() => applyPreset('birthday')}>
-            <Cake size={12} /> Cyberpunk 25th
-          </button>
-          <button type="button" className="preset-btn" onClick={() => applyPreset('community')}>
-            <Users size={12} /> Eco Harvest Fair
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="modal-body">
-          {/* Event Type Grid */}
+        <div className="form-row-2">
           <div className="form-group">
-            <label>Event Category</label>
-            <div className="event-type-grid">
-              <button
-                type="button"
-                className={`type-card ${formData.eventType === 'wedding' ? 'selected wedding' : ''}`}
-                onClick={() => setFormData({ ...formData, eventType: 'wedding' })}
-              >
-                <div className="type-icon">💍</div>
-                <div className="type-title">Wedding</div>
-                <div className="type-desc">Ceremonies, banquets & receptions</div>
-              </button>
-
-              <button
-                type="button"
-                className={`type-card ${formData.eventType === 'birthday' ? 'selected birthday' : ''}`}
-                onClick={() => setFormData({ ...formData, eventType: 'birthday' })}
-              >
-                <div className="type-icon">🎂</div>
-                <div className="type-title">Birthday</div>
-                <div className="type-desc">Milestones, surprise bashes & parties</div>
-              </button>
-
-              <button
-                type="button"
-                className={`type-card ${formData.eventType === 'community' ? 'selected community' : ''}`}
-                onClick={() => setFormData({ ...formData, eventType: 'community' })}
-              >
-                <div className="type-icon">🎪</div>
-                <div className="type-title">Community</div>
-                <div className="type-desc">Festivals, fundraisers & block events</div>
-              </button>
+            <label htmlFor="intake-title">Event name</label>
+            <input id="intake-title" type="text" value={formData.title} onChange={update('title')} maxLength={LIMITS.title} required data-autofocus />
+          </div>
+          <div className="form-group">
+            <label htmlFor="intake-date">Date</label>
+            <div className="input-with-icon">
+              <Calendar size={16} className="field-icon" aria-hidden="true" />
+              <input id="intake-date" type="date" value={formData.date} onChange={update('date')} required />
             </div>
           </div>
+        </div>
 
-          {/* Title & Date */}
-          <div className="form-row-2">
-            <div className="form-group">
-              <label htmlFor="title">Event Name / Occasion</label>
+        <div className="form-row-2">
+          <div className="form-group">
+            <label htmlFor="intake-guests">Guest count</label>
+            <div className="input-with-icon">
+              <Users size={16} className="field-icon" aria-hidden="true" />
               <input
-                id="title"
-                type="text"
-                value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                placeholder="e.g. Sofia & Liam's Sunset Vows"
+                id="intake-guests"
+                type="number"
+                min={LIMITS.guests.min}
+                max={LIMITS.guests.max}
+                value={formData.guestCount}
+                onChange={update('guestCount')}
                 required
               />
             </div>
-
-            <div className="form-group">
-              <label htmlFor="date">Target Date</label>
-              <div className="input-with-icon">
-                <Calendar size={16} className="field-icon" />
-                <input
-                  id="date"
-                  type="date"
-                  value={formData.date}
-                  onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                  required
-                />
-              </div>
-            </div>
           </div>
-
-          {/* Guests & Budget */}
-          <div className="form-row-2">
-            <div className="form-group">
-              <label htmlFor="guestCount">
-                <span>Guest Count</span>
-                <span className="field-value-badge">{formData.guestCount} guests</span>
-              </label>
-              <div className="input-with-icon">
-                <Users size={16} className="field-icon" />
-                <input
-                  id="guestCount"
-                  type="number"
-                  min="5"
-                  max="5000"
-                  step="5"
-                  value={formData.guestCount}
-                  onChange={(e) => setFormData({ ...formData, guestCount: parseInt(e.target.value) || 0 })}
-                  required
-                />
-              </div>
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="budget">
-                <span>Target Budget (USD)</span>
-                <span className="field-value-badge">${formData.budget.toLocaleString()}</span>
-              </label>
-              <div className="input-with-icon">
-                <DollarSign size={16} className="field-icon" />
-                <input
-                  id="budget"
-                  type="number"
-                  min="500"
-                  max="500000"
-                  step="500"
-                  value={formData.budget}
-                  onChange={(e) => setFormData({ ...formData, budget: parseInt(e.target.value) || 0 })}
-                  required
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Location & Theme */}
-          <div className="form-row-2">
-            <div className="form-group">
-              <label htmlFor="location">Target Venue / Atmosphere</label>
-              <div className="input-with-icon">
-                <MapPin size={16} className="field-icon" />
-                <input
-                  id="location"
-                  type="text"
-                  value={formData.location}
-                  onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                  placeholder="e.g. Botanical glasshouse or loft warehouse"
-                />
-              </div>
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="theme">Aesthetic / Design Vibe</label>
+          <div className="form-group">
+            <label htmlFor="intake-budget">Total budget (USD)</label>
+            <div className="input-with-icon">
+              <DollarSign size={16} className="field-icon" aria-hidden="true" />
               <input
-                id="theme"
-                type="text"
-                value={formData.theme}
-                onChange={(e) => setFormData({ ...formData, theme: e.target.value })}
-                placeholder="e.g. Modern bohemian with candlelight"
+                id="intake-budget"
+                type="number"
+                min={LIMITS.budget.min}
+                max={LIMITS.budget.max}
+                step="100"
+                value={formData.budget}
+                onChange={update('budget')}
+                required
               />
             </div>
           </div>
+        </div>
 
-          {/* Notes & Special Requests */}
+        <div className="form-row-2">
           <div className="form-group">
-            <label htmlFor="notes">Special Requirements, Culinary Preferences, & Moments</label>
-            <textarea
-              id="notes"
-              rows="3"
-              value={formData.notes}
-              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-              placeholder="e.g. Signature cocktails, gluten-free catering, live jazz trio, kid-friendly craft booth..."
-            />
+            <label htmlFor="intake-location">Venue or area</label>
+            <div className="input-with-icon">
+              <MapPin size={16} className="field-icon" aria-hidden="true" />
+              <input id="intake-location" type="text" value={formData.location} onChange={update('location')} maxLength={LIMITS.shortText} />
+            </div>
           </div>
-
-          <div className="modal-footer">
-            <button type="button" className="btn-secondary" onClick={onClose}>
-              Cancel
-            </button>
-            <button type="submit" className="btn-primary btn-generate" disabled={isGenerating}>
-              {isGenerating ? (
-                <>
-                  <div className="btn-spinner" />
-                  <span>Synthesizing Plan with Gemini...</span>
-                </>
-              ) : (
-                <>
-                  <Wand2 size={16} />
-                  <span>Generate Master Plan</span>
-                </>
-              )}
-            </button>
+          <div className="form-group">
+            <label htmlFor="intake-setting">Setting</label>
+            <select id="intake-setting" value={formData.setting || ''} onChange={update('setting')} aria-describedby="intake-setting-hint">
+              <option value="">Detect from venue</option>
+              <option value="indoor">Indoor</option>
+              <option value="outdoor">Outdoor</option>
+              <option value="mixed">Indoor and outdoor</option>
+            </select>
+            <p id="intake-setting-hint" className="form-hint">Outdoor events get weather backup and a larger reserve.</p>
           </div>
-        </form>
-      </div>
+        </div>
 
-      <style>{`
-        .modal-card {
-          width: 100%;
-          max-width: 680px;
-          max-height: 90vh;
-          overflow-y: auto;
-          background: var(--bg-surface-elevated);
-          border: 1px solid var(--border-medium);
-          border-radius: var(--radius-xl);
-          box-shadow: 0 25px 60px rgba(0, 0, 0, 0.7);
-        }
+        <div className="form-group">
+          <label htmlFor="intake-theme">Theme or style</label>
+          <input id="intake-theme" type="text" value={formData.theme} onChange={update('theme')} maxLength={LIMITS.shortText} />
+        </div>
 
-        .intake-icon-badge {
-          width: 36px;
-          height: 36px;
-          border-radius: var(--radius-md);
-          background: var(--primary-gradient);
-          color: #FFF;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
+        <div className="form-group">
+          <label htmlFor="intake-notes">Special requirements</label>
+          <textarea
+            id="intake-notes"
+            rows="3"
+            value={formData.notes}
+            onChange={update('notes')}
+            maxLength={LIMITS.longText}
+            placeholder="Dietary needs, accessibility, kids, music…"
+          />
+        </div>
 
-        .preset-bar {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          padding: 10px 24px;
-          background: rgba(255, 255, 255, 0.02);
-          border-bottom: 1px solid var(--border-subtle);
-          flex-wrap: wrap;
-        }
-
-        .preset-label {
-          font-size: 0.75rem;
-          color: var(--text-muted);
-          font-weight: 600;
-          text-transform: uppercase;
-        }
-
-        .preset-btn {
-          display: inline-flex;
-          align-items: center;
-          gap: 6px;
-          padding: 4px 10px;
-          border-radius: var(--radius-pill);
-          background: rgba(255, 255, 255, 0.05);
-          border: 1px solid var(--border-subtle);
-          color: var(--text-secondary);
-          font-size: 0.75rem;
-          font-weight: 600;
-          transition: all var(--transition-fast);
-        }
-
-        .preset-btn:hover {
-          color: #FFF;
-          background: rgba(255, 255, 255, 0.1);
-          border-color: var(--border-medium);
-        }
-
-        .event-type-grid {
-          display: grid;
-          grid-template-columns: repeat(3, 1fr);
-          gap: 12px;
-          margin-top: 6px;
-        }
-
-        .type-card {
-          padding: 14px;
-          border-radius: var(--radius-md);
-          background: rgba(255, 255, 255, 0.03);
-          border: 1px solid var(--border-subtle);
-          text-align: left;
-          transition: all var(--transition-fast);
-        }
-
-        .type-card:hover {
-          background: rgba(255, 255, 255, 0.06);
-          border-color: var(--border-medium);
-        }
-
-        .type-card.selected.wedding {
-          background: rgba(245, 158, 11, 0.12);
-          border-color: var(--wedding-gold);
-          box-shadow: 0 0 16px rgba(245, 158, 11, 0.2);
-        }
-
-        .type-card.selected.birthday {
-          background: rgba(244, 63, 94, 0.12);
-          border-color: var(--birthday-coral);
-          box-shadow: 0 0 16px rgba(244, 63, 94, 0.2);
-        }
-
-        .type-card.selected.community {
-          background: rgba(99, 102, 241, 0.12);
-          border-color: var(--community-violet);
-          box-shadow: 0 0 16px rgba(99, 102, 241, 0.2);
-        }
-
-        .type-icon {
-          font-size: 1.4rem;
-          margin-bottom: 4px;
-        }
-
-        .type-title {
-          font-weight: 700;
-          color: #FFF;
-          font-size: 0.95rem;
-        }
-
-        .type-desc {
-          font-size: 0.72rem;
-          color: var(--text-muted);
-          line-height: 1.3;
-        }
-
-        .form-row-2 {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 16px;
-        }
-
-        .form-group label {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          font-size: 0.8rem;
-          font-weight: 600;
-          color: var(--text-secondary);
-          margin-bottom: 6px;
-        }
-
-        .field-value-badge {
-          color: #A78BFA;
-          font-family: var(--font-mono);
-          font-size: 0.8rem;
-        }
-
-        .input-with-icon {
-          position: relative;
-          display: flex;
-          align-items: center;
-        }
-
-        .field-icon {
-          position: absolute;
-          left: 12px;
-          color: var(--text-muted);
-          pointer-events: none;
-        }
-
-        .input-with-icon input {
-          padding-left: 38px;
-        }
-
-        .form-group input, .form-group textarea {
-          width: 100%;
-          padding: 10px 14px;
-          background: rgba(0, 0, 0, 0.25);
-          border: 1px solid var(--border-medium);
-          border-radius: var(--radius-md);
-          color: #FFF;
-          font-size: 0.88rem;
-          transition: border-color var(--transition-fast);
-        }
-
-        .form-group input:focus, .form-group textarea:focus {
-          border-color: var(--primary);
-          box-shadow: 0 0 0 3px var(--primary-glow);
-        }
-
-        .btn-generate {
-          padding: 12px 28px;
-        }
-
-        .btn-spinner {
-          width: 16px;
-          height: 16px;
-          border: 2px solid rgba(255, 255, 255, 0.3);
-          border-top-color: #FFF;
-          border-radius: 50%;
-          animation: spinSlow 0.8s linear infinite;
-        }
-
-        @media (max-width: 640px) {
-          .event-type-grid {
-            grid-template-columns: 1fr;
-          }
-          .form-row-2 {
-            grid-template-columns: 1fr;
-          }
-        }
-      `}</style>
-    </div>
+        <div className="modal-footer">
+          <button type="button" className="btn-secondary" onClick={onClose}>
+            Cancel
+          </button>
+          <button type="submit" className="btn-primary btn-generate" disabled={isGenerating}>
+            {isGenerating ? <span className="btn-spinner" aria-hidden="true" /> : <Wand2 size={16} aria-hidden="true" />}
+            <span>{isGenerating ? 'Building plan…' : 'Build my plan'}</span>
+          </button>
+        </div>
+      </form>
+    </Modal>
   );
 }

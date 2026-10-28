@@ -1,609 +1,209 @@
-import React, { useState, useEffect } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
+import { MessageSquare, Sparkles } from 'lucide-react';
+
 import Navbar from './components/Navbar';
 import EventHeader from './components/EventHeader';
+import PlannerTabs from './components/PlannerTabs';
 import BudgetPlanner from './components/BudgetPlanner';
 import TimelinePlanner from './components/TimelinePlanner';
 import VendorChecklist from './components/VendorChecklist';
 import IdeaGenerator from './components/IdeaGenerator';
-import ChatPanel from './components/ChatPanel';
-import ApiKeyModal from './components/ApiKeyModal';
-import IntakeFormModal from './components/IntakeFormModal';
 
-import { MOCK_PLANS } from './utils/mockPlans';
-import { exportPlanToPdf } from './utils/exportPdf';
-import { 
-  buildIntakePrompt, 
-  buildRefinementPrompt, 
-  parseGeminiPlan 
-} from './utils/prompts';
-import { 
-  hasConfiguredApiKey, 
-  generateWithGemini 
-} from './config/gemini';
-import { simulateAiChatResponse } from './utils/aiSimulator';
+import { generatePlan } from './domain/planner';
+import { getPresetIntake, presetLabel } from './domain/presets';
+import { checkAiStatus, createPlan, sendChat } from './services/api';
+import { usePersistentPlan } from './hooks/usePersistentPlan';
+import { celebrate } from './utils/celebrate';
+import { DEFAULT_THEME, themeName } from './config/themes';
+import './App.css';
 
-import { 
-  DollarSign, 
-  Calendar, 
-  Users, 
-  Sparkles, 
-  MessageSquare 
-} from 'lucide-react';
-import confetti from 'canvas-confetti';
+// Rarely used panels are split out of the main bundle.
+const ChatPanel = lazy(() => import('./components/ChatPanel'));
+const IntakeFormModal = lazy(() => import('./components/IntakeFormModal'));
+
+const THEME_KEY = 'celebai_theme';
+const WELCOME = {
+  role: 'model',
+  text: 'Hi! I can rebalance your budget, resize for a new headcount, move the date, flag risks and suggest ideas. Try a suggestion below.',
+};
+
+function readTheme() {
+  try {
+    return localStorage.getItem(THEME_KEY) || DEFAULT_THEME;
+  } catch {
+    return DEFAULT_THEME;
+  }
+}
 
 export default function App() {
-  const [eventType, setEventType] = useState('wedding');
+  const [plan, setPlan] = usePersistentPlan(() => generatePlan(getPresetIntake('wedding')));
   const [activeTab, setActiveTab] = useState('budget');
-  const [currentPlan, setCurrentPlan] = useState(MOCK_PLANS.wedding);
-  
-  // Modals & Panels
-  const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState(false);
-  const [isIntakeModalOpen, setIsIntakeModalOpen] = useState(false);
+  const [theme, setTheme] = useState(readTheme);
+  const [aiStatus, setAiStatus] = useState('checking');
+  const [isIntakeOpen, setIsIntakeOpen] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
-  
-  // API & Generation State
-  const [hasApiKey, setHasApiKey] = useState(() => hasConfiguredApiKey());
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [notification, setNotification] = useState(null);
+  const [isBusy, setIsBusy] = useState(false);
+  const [messages, setMessages] = useState([WELCOME]);
+  const [toast, setToast] = useState(null);
+  const toastTimer = useRef(null);
+  const [today] = useState(() => new Date());
 
-  // Chat State
-  const [messages, setMessages] = useState([
-    {
-      role: 'model',
-      text: "👋 Welcome! I'm CelebAI. I've initialized your Golden Hour Botanical Wedding master plan. Click 'Refine Plan' or any of the quick suggestions below to customize budgets, timelines, vendors, and creative concepts!"
-    }
-  ]);
-  const [isStreaming, setIsStreaming] = useState(false);
-  const [streamingText, setStreamingText] = useState('');
-  const [currentTheme, setCurrentTheme] = useState(() => {
-    return localStorage.getItem('celebai_theme') || 'cosmic';
-  });
-
-  // Apply Theme on load
   useEffect(() => {
-    document.documentElement.setAttribute('data-theme', currentTheme);
-  }, [currentTheme]);
+    checkAiStatus().then(setAiStatus);
+  }, []);
 
-  const handleSelectTheme = (themeId) => {
-    setCurrentTheme(themeId);
-    document.documentElement.setAttribute('data-theme', themeId);
-    localStorage.setItem('celebai_theme', themeId);
-    const themeNames = {
-      'cosmic': 'Cosmic Twilight',
-      'royal-gold': 'Champagne Royal',
-      'emerald': 'Emerald Sanctuary',
-      'cyberpunk': 'Cyberpunk Synthwave',
-      'aurora-light': 'Pearl Aurora'
-    };
-    showNotification(`Theme updated to ${themeNames[themeId] || themeId}!`, 'info');
-  };
-
-  const showNotification = (message, type = 'success') => {
-    setNotification({ message, type });
-    setTimeout(() => setNotification(null), 4000);
-  };
-
-  // Switch Event Mode (Wedding / Birthday / Community)
-  const handleSelectEventType = (type) => {
-    setEventType(type);
-    const selectedMock = MOCK_PLANS[type] || MOCK_PLANS.wedding;
-    setCurrentPlan(selectedMock);
-    
-    // Add assistant announcement
-    const typeLabel = type === 'wedding' ? 'Wedding' : type === 'birthday' ? 'Birthday' : 'Community Gathering';
-    setMessages((prev) => [
-      ...prev,
-      {
-        role: 'model',
-        text: `Switched workspace to ${typeLabel}: "${selectedMock.title}". All budget categories, timeline milestones, and vendors updated!`
-      }
-    ]);
-
-    confetti({
-      particleCount: 40,
-      spread: 50,
-      origin: { y: 0.15 }
-    });
-  };
-
-  // Generate Master Plan via Intake Form
-  const handleGeneratePlan = async (formData) => {
-    setIsGenerating(true);
-    setIsIntakeModalOpen(false);
-
-    showNotification("Synthesizing celebration architecture with Gemini 2.5 Flash...", "info");
-
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
     try {
-      if (hasConfiguredApiKey()) {
-        const prompt = buildIntakePrompt(formData);
-        const responseText = await generateWithGemini(prompt);
-        const parsed = parseGeminiPlan(responseText);
+      localStorage.setItem(THEME_KEY, theme);
+    } catch {
+      // Theme still applies for this session.
+    }
+  }, [theme]);
 
-        if (parsed) {
-          setCurrentPlan(parsed);
-          setEventType(parsed.eventType || formData.eventType);
-          showNotification("Bespoke event plan successfully generated!", "success");
-          confetti({ particleCount: 80, spread: 80, origin: { y: 0.4 } });
-          
-          setMessages((prev) => [
-            ...prev,
-            {
-              role: 'model',
-              text: `✨ I have generated a comprehensive master plan for "${parsed.title}". You can inspect the updated financial allocations, milestones, and vendor checklist across the tabs.`
-            }
-          ]);
-        } else {
-          throw new Error('PLAN_PARSE_FAILED');
-        }
-      } else {
-        // High-fidelity fallback synthesizer for instant evaluation without requiring API key
-        await new Promise((r) => setTimeout(r, 1200));
-        const base = MOCK_PLANS[formData.eventType] || MOCK_PLANS.wedding;
-        const customPlan = {
-          ...base,
-          title: formData.title,
-          date: formData.date,
-          guestCount: formData.guestCount,
-          budget: formData.budget,
-          location: formData.location || base.location,
-          theme: formData.theme || base.theme,
-          summary: `A bespoke celebration designed for ${formData.guestCount} guests with a target budget of $${formData.budget.toLocaleString()} USD at ${formData.location || 'preferred location'}. ${formData.notes || ''}`
-        };
+  const notify = useCallback((message, type = 'success') => {
+    clearTimeout(toastTimer.current);
+    setToast({ message, type });
+    toastTimer.current = setTimeout(() => setToast(null), 4000);
+  }, []);
 
-        setCurrentPlan(customPlan);
-        setEventType(formData.eventType);
-        showNotification("Master plan synthesized! (Connect API key for live LLM reasoning)", "success");
-        confetti({ particleCount: 70, spread: 70, origin: { y: 0.4 } });
-      }
-    } catch (err) {
-      console.error('Generation error:', err);
-      showNotification(`Generation error: ${err.message || 'Please check your API key.'}`, "danger");
+  const updatePlan = (field, label) => (value) => {
+    setPlan((current) => ({ ...current, [field]: value }));
+    notify(`${label} updated.`);
+  };
+
+  const handleLoadSample = (eventType) => {
+    setPlan(generatePlan(getPresetIntake(eventType)));
+    setMessages([WELCOME]);
+    notify(`Loaded the ${presetLabel(eventType).toLowerCase()} sample.`, 'info');
+  };
+
+  const handleGeneratePlan = async (intake) => {
+    setIsBusy(true);
+    try {
+      const result = await createPlan(intake);
+      setPlan(result.plan);
+      setMessages([WELCOME]);
+      setIsIntakeOpen(false);
+      setActiveTab('budget');
+      notify(result.notice || (result.source === 'gemini' ? 'Plan built with Gemini and the planning engine.' : 'Plan built by the planning engine.'), result.notice ? 'info' : 'success');
+      celebrate();
     } finally {
-      setIsGenerating(false);
+      setIsBusy(false);
     }
   };
 
-  // Conversational Refinement via AI Chat
-  const handleSendMessage = async (userText) => {
-    const userMessage = { role: 'user', text: userText };
-    setMessages((prev) => [...prev, userMessage]);
-    setIsStreaming(true);
-    setStreamingText('');
-
+  const handleSendMessage = async (text) => {
+    setMessages((prev) => [...prev, { role: 'user', text }]);
+    setIsBusy(true);
     try {
-      if (hasConfiguredApiKey()) {
-        const prompt = buildRefinementPrompt(currentPlan, userText);
-        let accumulated = '';
-
-        await generateWithGemini(prompt, (chunk, full) => {
-          accumulated = full;
-          setStreamingText(full);
-        });
-
-        const parsedPlan = parseGeminiPlan(accumulated);
-        setMessages((prev) => [
-          ...prev,
-          {
-            role: 'model',
-            text: accumulated.replace(/```(?:json)?\s*[\s\S]*?\s*```/g, '').trim() || "I've synthesized the requested adjustments to your event plan.",
-            updatedPlan: parsedPlan
-          }
-        ]);
-      } else {
-        // High-intelligence context-aware response for interactive demo mode
-        await new Promise((r) => setTimeout(r, 700));
-        const simResult = simulateAiChatResponse(currentPlan, userText);
-        setMessages((prev) => [
-          ...prev,
-          {
-            role: 'model',
-            text: simResult.text,
-            updatedPlan: simResult.updatedPlan,
-            isSimulated: true
-          }
-        ]);
-      }
-    } catch (err) {
-      console.warn('Gemini chat error, falling back to simulation engine:', err);
-      // Graceful fallback to rich offline engine
-      const simResult = simulateAiChatResponse(currentPlan, userText);
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: 'model',
-          text: `${simResult.text}\n\n*(Notice: Live Gemini connection issue: "${err.message}". Seamlessly served by CelebAI Intelligence Engine)*`,
-          updatedPlan: simResult.updatedPlan,
-          isSimulated: true
-        }
-      ]);
+      const result = await sendChat(plan, text);
+      setMessages((prev) => [...prev, { role: 'model', text: result.reply, plan: result.plan, source: result.source, notice: result.notice }]);
     } finally {
-      setIsStreaming(false);
-      setStreamingText('');
+      setIsBusy(false);
     }
   };
 
-  // AI Brainstorm More Ideas
-  const handleAskAiMoreIdeas = () => {
+  const handleApplyPlan = (messageIndex) => {
+    const proposal = messages[messageIndex]?.plan;
+    if (!proposal) return;
+    setPlan(proposal);
+    setMessages((prev) => prev.map((message, index) => (index === messageIndex ? { ...message, applied: true } : message)));
+    notify('Assistant changes applied to your plan.');
+  };
+
+  const handleAskForIdeas = () => {
     setIsChatOpen(true);
-    handleSendMessage(`Please brainstorm 4 additional, highly innovative experiential moments tailored to our theme: "${currentPlan.theme}".`);
+    handleSendMessage('More ideas for my theme');
   };
 
-  // Export PDF Dossier
-  const handleExportPdf = () => {
-    showNotification("Generating high-resolution event dossier PDF...", "info");
+  const handleExportPdf = async () => {
     try {
-      exportPlanToPdf(currentPlan);
-      showNotification("PDF Dossier downloaded successfully!", "success");
-    } catch (err) {
-      console.error('PDF export error:', err);
-      showNotification("Failed to generate PDF. Please try again.", "danger");
+      const { exportPlanToPdf } = await import('./utils/exportPdf');
+      exportPlanToPdf(plan);
+      notify('PDF downloaded.');
+    } catch {
+      notify('Could not create the PDF. Please try again.', 'danger');
     }
+  };
+
+  const handleSelectTheme = (id) => {
+    setTheme(id);
+    notify(`Theme: ${themeName(id)}.`, 'info');
+  };
+
+  const panels = {
+    budget: <BudgetPlanner plan={plan} onUpdateBudget={updatePlan('budgetItems', 'Budget')} />,
+    timeline: <TimelinePlanner plan={plan} today={today} onUpdateTimeline={updatePlan('timeline', 'Timeline')} />,
+    vendors: <VendorChecklist plan={plan} onUpdateVendors={updatePlan('vendors', 'Vendor list')} />,
+    ideas: <IdeaGenerator plan={plan} onUpdateIdeas={updatePlan('creativeIdeas', 'Ideas')} onAskForIdeas={handleAskForIdeas} isBusy={isBusy} />,
   };
 
   return (
-    <div className="celebai-app">
-      {/* Top Navbar */}
+    <div className={`celebai-app ${isChatOpen ? 'chat-open' : ''}`}>
+      <a className="skip-link" href="#main-content">Skip to main content</a>
+
       <Navbar
-        currentEventType={eventType}
-        onSelectEventType={handleSelectEventType}
-        hasApiKey={hasApiKey}
-        onOpenApiKeyModal={() => setIsApiKeyModalOpen(true)}
+        currentEventType={plan.eventType}
+        onLoadSample={handleLoadSample}
+        aiStatus={aiStatus}
         onExportPdf={handleExportPdf}
-        isGenerating={isGenerating}
-        currentTheme={currentTheme}
+        isBusy={isBusy}
+        currentTheme={theme}
         onSelectTheme={handleSelectTheme}
       />
 
-      {/* Global Notification Banner */}
-      {notification && (
-        <div className={`notification-toast toast-${notification.type}`}>
-          <Sparkles size={14} />
-          <span>{notification.message}</span>
-        </div>
-      )}
+      <output className="toast-region" aria-live="polite">
+        {toast && (
+          <div className={`notification-toast toast-${toast.type}`}>
+            <Sparkles size={14} aria-hidden="true" />
+            <span>{toast.message}</span>
+          </div>
+        )}
+      </output>
 
-      <main className="app-container" id="main-content" role="main">
-        {/* Event Header Banner */}
-        <EventHeader
-          plan={currentPlan}
-          onOpenIntake={() => setIsIntakeModalOpen(true)}
-          onFocusChat={() => setIsChatOpen(true)}
-          isGenerating={isGenerating}
-        />
+      <main className="app-container" id="main-content" tabIndex={-1}>
+        <EventHeader plan={plan} today={today} onOpenIntake={() => setIsIntakeOpen(true)} onOpenChat={() => setIsChatOpen(true)} isBusy={isBusy} />
 
-        {/* Navigation Tabs */}
         <div className="tabs-container glass-panel">
-          <nav className="tabs-nav" role="tablist" aria-label="Planner Views">
-            <button
-              role="tab"
-              aria-selected={activeTab === 'budget'}
-              aria-controls="panel-budget"
-              id="tab-budget"
-              className={`tab-btn ${activeTab === 'budget' ? 'active' : ''}`}
-              onClick={() => setActiveTab('budget')}
-            >
-              <DollarSign size={16} />
-              <span>Budget Planner</span>
-              <span className="tab-badge">${(currentPlan.budget || 0).toLocaleString()}</span>
-            </button>
-
-            <button
-              role="tab"
-              aria-selected={activeTab === 'timeline'}
-              aria-controls="panel-timeline"
-              id="tab-timeline"
-              className={`tab-btn ${activeTab === 'timeline' ? 'active' : ''}`}
-              onClick={() => setActiveTab('timeline')}
-            >
-              <Calendar size={16} />
-              <span>Execution Timeline</span>
-              <span className="tab-badge">{currentPlan.timeline?.length || 0}</span>
-            </button>
-
-            <button
-              role="tab"
-              aria-selected={activeTab === 'vendors'}
-              aria-controls="panel-vendors"
-              id="tab-vendors"
-              className={`tab-btn ${activeTab === 'vendors' ? 'active' : ''}`}
-              onClick={() => setActiveTab('vendors')}
-            >
-              <Users size={16} />
-              <span>Vendor Checklist</span>
-              <span className="tab-badge">{currentPlan.vendors?.length || 0}</span>
-            </button>
-
-            <button
-              role="tab"
-              aria-selected={activeTab === 'ideas'}
-              aria-controls="panel-ideas"
-              id="tab-ideas"
-              className={`tab-btn ${activeTab === 'ideas' ? 'active' : ''}`}
-              onClick={() => setActiveTab('ideas')}
-            >
-              <Sparkles size={16} />
-              <span>Creative Concepts</span>
-              <span className="tab-badge">{currentPlan.creativeIdeas?.length || 0}</span>
-            </button>
-          </nav>
-
-          <button 
+          <PlannerTabs plan={plan} activeTab={activeTab} onChange={setActiveTab} />
+          <button
+            type="button"
             className={`btn-chat-toggle ${isChatOpen ? 'chat-is-active' : ''}`}
-            onClick={() => setIsChatOpen(!isChatOpen)}
-            title="Open Gemini Conversational Assistant"
-            aria-label="Open Gemini Conversational Assistant"
+            onClick={() => setIsChatOpen((open) => !open)}
             aria-expanded={isChatOpen}
           >
-            <MessageSquare size={16} />
-            <span>AI Copilot</span>
-            <span className="copilot-pulse" />
+            <MessageSquare size={16} aria-hidden="true" />
+            <span>Assistant</span>
           </button>
         </div>
 
-        {/* Tab Content Display */}
-        <div className="tab-view-content" role="tabpanel" id={`panel-${activeTab}`} aria-labelledby={`tab-${activeTab}`}>
-          {activeTab === 'budget' && (
-            <BudgetPlanner
-              plan={currentPlan}
-              onUpdateBudget={(updatedBudget) => {
-                setCurrentPlan({ ...currentPlan, budgetItems: updatedBudget });
-                showNotification("Budget allocations updated.", "success");
-              }}
-            />
-          )}
-
-          {activeTab === 'timeline' && (
-            <TimelinePlanner
-              plan={currentPlan}
-              onUpdateTimeline={(updatedTimeline) => {
-                setCurrentPlan({ ...currentPlan, timeline: updatedTimeline });
-                showNotification("Milestones updated.", "success");
-              }}
-            />
-          )}
-
-          {activeTab === 'vendors' && (
-            <VendorChecklist
-              plan={currentPlan}
-              onUpdateVendors={(updatedVendors) => {
-                setCurrentPlan({ ...currentPlan, vendors: updatedVendors });
-                showNotification("Vendor checklist updated.", "success");
-              }}
-            />
-          )}
-
-          {activeTab === 'ideas' && (
-            <IdeaGenerator
-              plan={currentPlan}
-              onUpdateIdeas={(updatedIdeas) => {
-                setCurrentPlan({ ...currentPlan, creativeIdeas: updatedIdeas });
-                showNotification("Creative ideas updated.", "success");
-              }}
-              onAskAiMoreIdeas={handleAskAiMoreIdeas}
-              isGenerating={isGenerating}
-            />
-          )}
+        <div className="tab-view-content" role="tabpanel" id={`panel-${activeTab}`} aria-labelledby={`tab-${activeTab}`} tabIndex={0}>
+          {panels[activeTab]}
         </div>
       </main>
 
-      {/* Docked AI Assistant Chat Panel */}
-      <ChatPanel
-        isOpen={isChatOpen}
-        onClose={() => setIsChatOpen(false)}
-        plan={currentPlan}
-        messages={messages}
-        onSendMessage={handleSendMessage}
-        isStreaming={isStreaming}
-        streamingText={streamingText}
-        onApplyPlanUpdate={(newPlan) => {
-          setCurrentPlan(newPlan);
-          showNotification("AI updates merged into your dashboard!", "success");
-          confetti({ particleCount: 50, spread: 60, origin: { y: 0.3 } });
-        }}
-        hasApiKey={hasApiKey}
-        onOpenApiKeyModal={() => setIsApiKeyModalOpen(true)}
-      />
+      <Suspense fallback={null}>
+        {isChatOpen && (
+          <ChatPanel
+            plan={plan}
+            messages={messages}
+            onSendMessage={handleSendMessage}
+            onApplyPlan={handleApplyPlan}
+            onClose={() => setIsChatOpen(false)}
+            isBusy={isBusy}
+            aiStatus={aiStatus}
+          />
+        )}
+        {isIntakeOpen && <IntakeFormModal onClose={() => setIsIntakeOpen(false)} onGenerate={handleGeneratePlan} isGenerating={isBusy} />}
+      </Suspense>
 
-      {/* Floating Chat Trigger button when chat is closed */}
       {!isChatOpen && (
-        <button 
-          className="floating-ai-trigger"
-          onClick={() => setIsChatOpen(true)}
-          title="Open CelebAI Assistant"
-        >
-          <Sparkles size={20} className="float-icon" />
-          <span className="float-label">Ask CelebAI</span>
+        <button type="button" className="floating-ai-trigger" onClick={() => setIsChatOpen(true)} aria-label="Open planning assistant">
+          <Sparkles size={20} className="float-icon" aria-hidden="true" />
+          <span className="float-label" aria-hidden="true">Ask CelebAI</span>
         </button>
       )}
-
-      {/* Modals */}
-      <ApiKeyModal
-        isOpen={isApiKeyModalOpen}
-        onClose={() => setIsApiKeyModalOpen(false)}
-        onKeySaved={() => {
-          setHasApiKey(hasConfiguredApiKey());
-          showNotification("Gemini API key updated!", "success");
-        }}
-      />
-
-      <IntakeFormModal
-        isOpen={isIntakeModalOpen}
-        onClose={() => setIsIntakeModalOpen(false)}
-        onGenerate={handleGeneratePlan}
-        isGenerating={isGenerating}
-      />
-
-      <style>{`
-        .celebai-app {
-          min-height: 100vh;
-          padding-bottom: 60px;
-        }
-
-        .notification-toast {
-          position: fixed;
-          top: 70px;
-          right: 24px;
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          padding: 12px 20px;
-          border-radius: var(--radius-md);
-          font-size: 0.85rem;
-          font-weight: 600;
-          z-index: 1000;
-          animation: slideDown 200ms ease-out;
-          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-        }
-
-        .toast-success {
-          background: #065F46;
-          color: #A7F3D0;
-          border: 1px solid #10B981;
-        }
-
-        .toast-info {
-          background: #312E81;
-          color: #C7D2FE;
-          border: 1px solid #6366F1;
-        }
-
-        .toast-danger {
-          background: #7F1D1D;
-          color: #FECDD3;
-          border: 1px solid #EF4444;
-        }
-
-        .tabs-container {
-          margin-bottom: 24px;
-          padding: 8px 16px;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 12px;
-          overflow-x: auto;
-        }
-
-        .tabs-nav {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-        }
-
-        .tab-btn {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          padding: 10px 18px;
-          border-radius: var(--radius-md);
-          font-size: 0.88rem;
-          font-weight: 600;
-          color: var(--text-secondary);
-          transition: all var(--transition-fast);
-          white-space: nowrap;
-        }
-
-        .tab-btn:hover {
-          color: var(--text-primary);
-          background: rgba(255, 255, 255, 0.05);
-        }
-
-        .tab-btn.active {
-          color: var(--text-primary);
-          background: var(--bg-glass-hover);
-          box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-        }
-
-        .tab-badge {
-          font-size: 0.72rem;
-          font-family: var(--font-mono);
-          padding: 2px 8px;
-          border-radius: var(--radius-pill);
-          background: var(--bg-glass);
-          color: var(--text-muted);
-        }
-
-        .tab-btn.active .tab-badge {
-          background: var(--primary);
-          color: var(--text-inverse);
-        }
-
-        .btn-chat-toggle {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          padding: 8px 16px;
-          border-radius: var(--radius-md);
-          background: rgba(139, 92, 246, 0.15);
-          border: 1px solid rgba(139, 92, 246, 0.35);
-          color: #DDD6FE;
-          font-size: 0.82rem;
-          font-weight: 700;
-          transition: all var(--transition-fast);
-          position: relative;
-        }
-
-        .btn-chat-toggle:hover {
-          background: rgba(139, 92, 246, 0.25);
-          transform: translateY(-1px);
-        }
-
-        .copilot-pulse {
-          width: 8px;
-          height: 8px;
-          border-radius: 50%;
-          background: #10B981;
-          box-shadow: 0 0 8px #10B981;
-        }
-
-        .tab-view-content {
-          margin-bottom: 40px;
-        }
-
-        .floating-ai-trigger {
-          position: fixed;
-          bottom: 28px;
-          right: 28px;
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          padding: 12px 22px;
-          border-radius: var(--radius-pill);
-          background: var(--primary-gradient);
-          color: #FFF;
-          box-shadow: 0 10px 30px var(--primary-glow);
-          font-weight: 700;
-          font-size: 0.9rem;
-          z-index: 80;
-          transition: transform var(--transition-bounce), box-shadow var(--transition-fast);
-        }
-
-        .floating-ai-trigger:hover {
-          transform: translateY(-3px) scale(1.03);
-          box-shadow: 0 14px 40px var(--primary-glow);
-        }
-
-        @keyframes slideDown {
-          from { transform: translateY(-15px); opacity: 0; }
-          to { transform: translateY(0); opacity: 1; }
-        }
-
-        @media (max-width: 768px) {
-          .tabs-container {
-            flex-direction: column;
-            align-items: stretch;
-          }
-          .tabs-nav {
-            overflow-x: auto;
-          }
-          .float-label {
-            display: none;
-          }
-          .floating-ai-trigger {
-            padding: 14px;
-            border-radius: 50%;
-          }
-        }
-      `}</style>
     </div>
   );
 }

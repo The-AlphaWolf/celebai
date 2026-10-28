@@ -43,7 +43,7 @@
 
   --text-primary: #F8FAFC;
   --text-secondary: #94A3B8;
-  --text-muted: #64748B;
+  --text-muted: #8B9AB0;
   --text-inverse: #090A14;
 
   --primary: #8B5CF6;
@@ -90,7 +90,7 @@
 
   --text-primary: #FFFDF9;
   --text-secondary: #D4C5B0;
-  --text-muted: #8C7E6C;
+  --text-muted: #A89A87;
   --text-inverse: #0A0908;
 
   --primary: #F59E0B;
@@ -137,9 +137,7 @@
 
   --text-primary: #F0FDF4;
   --text-secondary: #A7F3D0;
-  --text-muted: #5EEAD4;
-  --text-muted: #6EE7B7;
-  --text-muted: #4B7A66;
+  --text-muted: #7FB89E;
   --text-inverse: #06110D;
 
   --primary: #10B981;
@@ -233,7 +231,7 @@
 
   --text-primary: #0F172A;
   --text-secondary: #334155;
-  --text-muted: #64748B;
+  --text-muted: #526075;
   --text-inverse: #FFFFFF;
 
   --primary: #7C3AED;
@@ -568,7 +566,7 @@ input, textarea, select {
   text-shadow: 0 0 14px rgba(0, 240, 255, 0.65);
 }
 
-[data-theme="cyberpunk"] .panel-title-group h3,
+[data-theme="cyberpunk"] .panel-title-group .panel-heading,
 [data-theme="cyberpunk"] .node-title,
 [data-theme="cyberpunk"] .vendor-name,
 [data-theme="cyberpunk"] .idea-title {
@@ -803,7 +801,7 @@ input, textarea, select {
   color: #475569 !important;
 }
 
-[data-theme="aurora-light"] .panel-title-group h3 {
+[data-theme="aurora-light"] .panel-title-group .panel-heading {
   color: #0F172A !important;
   font-weight: 800;
 }
@@ -941,7 +939,7 @@ input, textarea, select {
   color: #334155 !important;
 }
 
-[data-theme="aurora-light"] .ideas-meta h3 {
+[data-theme="aurora-light"] .ideas-meta .panel-heading {
   color: #0F172A !important;
   font-weight: 800;
 }
@@ -965,3 +963,156 @@ input, textarea, select {
   color: #64748B !important;
 }
 
+
+/* ==========================================================================
+   ACCESSIBILITY
+   ========================================================================== */
+.visually-hidden {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.skip-link {
+  position: absolute;
+  left: 16px;
+  top: -60px;
+  z-index: 2000;
+  padding: 10px 16px;
+  border-radius: var(--radius-md);
+  background: var(--primary);
+  color: var(--text-inverse);
+  font-weight: 700;
+}
+
+.skip-link:focus {
+  top: 12px;
+}
+
+:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+.type-card:focus-within {
+  outline: 3px solid var(--primary);
+  outline-offset: 2px;
+}
+
+#main-content:focus {
+  outline: none;
+}
+
+ul.ideas-grid,
+ul.vendors-grid,
+ul.donut-legend,
+ul.theme-list,
+ol.timeline-nodes-list,
+.insights-list {
+  list-style: none;
+}
+
+fieldset.form-group {
+  border: none;
+}
+
+dd {
+  margin: 0;
+}
+
+.panel-heading {
+  font-size: 1.05rem;
+}
+
+.empty-state {
+  padding: 24px;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.status-pill.overdue {
+  background: rgba(239, 68, 68, 0.15);
+  color: #FCA5A5;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+}
+
+[data-theme="aurora-light"] .status-pill.overdue {
+  color: #B91C1C;
+}
+
+/* Planner insights (EventHeader) */
+.insights-panel {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.insights-title {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+}
+
+.insights-list {
+  display: grid;
+  gap: 6px;
+}
+
+.insight {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 0.86rem;
+  color: var(--text-primary);
+}
+
+.insight svg {
+  flex-shrink: 0;
+  margin-top: 3px;
+}
+
+.insight-warning svg { color: #F59E0B; }
+.insight-success svg { color: #10B981; }
+.insight-info svg { color: #60A5FA; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Native progress bars (timeline and vendor booking progress) */
+.native-progress {
+  appearance: none;
+  width: 100%;
+  height: 8px;
+  border: none;
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+  background: var(--border-subtle);
+}
+
+.native-progress::-webkit-progress-bar {
+  background: var(--border-subtle);
+}
+
+.native-progress::-webkit-progress-value {
+  background: var(--primary-gradient, var(--primary));
+  border-radius: var(--radius-pill);
+}
+
+.native-progress::-moz-progress-bar {
+  background: var(--primary-gradient, var(--primary));
+  border-radius: var(--radius-pill);
+}

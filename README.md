@@ -1,118 +1,142 @@
-# ✨ CelebAI — GenAI Celebration & Event Planner
+# CelebAI: event planning assistant
 
-> **PromptWars Virtual — Challenge 5: Celebration & Event Planner**  
-> *Transform chaotic event ideas into master plans with real-time budget charts, phased timelines, vendor checklists, and 5 bespoke themes powered by Google Gemini 2.5 Flash.*
+CelebAI helps people organize **weddings, birthdays and community events**. You enter the date, headcount, budget, venue, theme and special requirements, and it produces a complete plan: a budget split, a dated timeline, a vendor checklist and ideas. It then keeps the plan honest as things change (more guests, a smaller budget, a new date).
 
-[![React](https://img.shields.io/badge/React-19.0-61DAFB?logo=react&logoColor=white)](https://react.dev/)
-[![Vite](https://img.shields.io/badge/Vite-8.3-646CFF?logo=vite&logoColor=white)](https://vitejs.dev/)
-[![Gemini](https://img.shields.io/badge/Google_Gemini-2.5_Flash-8E75B2?logo=google&logoColor=white)](https://ai.google.dev/)
-[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+- **Chosen vertical:** PromptWars Challenge 5, *Celebration & Event Planner*.
+- **Persona:** someone organizing a celebration without professional planning experience, who needs to know *how much to spend on what, what to book first, and by when*.
+- **Static demo:** <https://the-alphawolf.github.io/celebai/>. GitHub Pages runs without the API server, so the demo uses the in-browser planning engine.
 
----
+## Approach and logic
 
-## 🌟 Overview
+The design splits the work into two parts. Decisions are made by a **deterministic planning engine**. Language and creativity come from **Gemini**. Every AI output is validated and re-balanced by the engine before it reaches the screen.
 
-**CelebAI** is an AI celebration architect designed for weddings, milestone birthdays, and community festivals. It structures complex celebrations into clear, actionable, and visually stunning interactive dashboards with live calculation engines and generative assistance.
+| Part | Responsibility | Where |
+|---|---|---|
+| Planning engine (pure functions) | Budget split, contingency, schedule, vendor priorities, risk analysis, plan edits | [`src/domain/planner.js`](src/domain/planner.js), [`profiles.js`](src/domain/profiles.js) |
+| Offline assistant | Turns chat requests ("reduce catering by 15%", "we now have 180 guests") into engine operations | [`src/domain/assistant.js`](src/domain/assistant.js) |
+| Validation | One schema for form input, saved plans, request bodies and model output | [`src/domain/planSchema.js`](src/domain/planSchema.js) |
+| API server | Keeps the Gemini key server-side, calls Gemini with JSON schemas, falls back to the engine | [`server/`](server) |
+| React UI | Dashboard, dialogs, chat; works with or without the server | [`src/components/`](src/components) |
 
----
+### How decisions depend on the user's context
 
-## ✨ Core Features
+| Context | Decision |
+|---|---|
+| Event type | Category mix, minimum realistic spend per guest, recommended lead time, vendor list and milestone schedule (`EVENT_PROFILES`) |
+| Budget ÷ guests | Per-guest categories (food, drink, cleanup) get a larger share when money per guest is tight and a smaller one when it is generous (factor clamped to 0.75–1.5) |
+| Venue or setting | Outdoor (stated, or inferred from words like *garden*, *park*, *beach*) adds a *Tents, Power & Weather Backup* line and a rental vendor, and raises the reserve by 5% (mixed setting: +3%) |
+| Guest count ≥ 150 | Adds *Security & Guest Logistics* and a stewards vendor |
+| Days until the event | Short notice raises the reserve by 5%. Milestones are scheduled backwards from the date and compressed proportionally when time is short. Vendors whose usual booking lead time has already passed are marked **Critical** |
+| Notes | Dietary words (vegan, gluten, halal, allergy…) go into the caterer brief. Mentions of kids or family add a kids' activity vendor. Theme and notes keywords rank the idea library |
+| Plan changes | Budget changes rescale all lines. Headcount changes rescale per-guest lines and take the difference from the reserve. Trims move savings into the reserve. Allocations always sum exactly to the budget |
 
-- 💰 **Dynamic Budget Visualizer:** Conic Donut chart, category breakdown, real-time allocation percentage, and buffer tracking.
-- ⏱️ **Phased Execution Timeline:** Milestones organized from months prior down to day-of hourly rundowns with interactive completion status.
-- 📋 **Vendor Partner Checklist:** Categorized bookings with priority badges, contact records, contract notes, and budget commitments.
-- 💡 **Signature Experiential Ideas:** Bespoke touchpoints, interactive entertainment, and creative décor concepts with bookmarking.
-- 🤖 **Conversational AI Copilot:** Instant iteration powered by **Gemini 2.5 Flash** with prompt suggestion chips and real-time dashboard state updates.
-- 🎨 **5 Bespoke Design Themes (`ui-ux-pro-max`):**
-  - **Champagne Royal:** Velvet black & molten amber gold for black-tie luxury weddings.
-  - **Emerald Sanctuary:** Forest noir & mint sage for botanical garden ceremonies.
-  - **Cyberpunk Neon:** Neon laser coral & cyan for electric milestone birthdays.
-  - **Amethyst Sunset:** Violet plum & rose dawn for community arts galas.
-  - **Pearl Aurora:** Opulent ivory & amethyst for high-contrast day mode.
-- 📄 **One-Click PDF Dossier Export:** Clean, formatted PDF download for vendors, couples, and planning committees.
+`analyzePlan()` checks the current plan and reports **planner insights**:
+- over-allocation
+- spend per guest below the realistic minimum
+- reserve under 8%
+- rushed timeline
+- vendors not booked inside their lead time
+- overdue milestones
+- categories where spending exceeds the allocation
 
----
+### How it works
 
-## 🛠️ Tech Stack
-
-- **Framework:** React 19 + Vite
-- **AI Model:** Google Gemini 2.5 Flash (`@google/generative-ai`)
-- **Styling:** Vanilla CSS design tokens with glassmorphism and theme switches
-- **Icons & Visuals:** `lucide-react`, `canvas-confetti`
-- **Export Engine:** `jspdf` client-side document compiler
-
----
-
-## 🚀 Quickstart
-
-### Prerequisites
-- Node.js (v18+)
-- npm or pnpm
-
-### 1. Clone & Install
-```bash
-git clone https://github.com/The-AlphaWolf/celebai.git
-cd celebai
-npm install
+```mermaid
+flowchart LR
+  UI[React UI] -->|intake / chat| API[Express API]
+  API -->|JSON schema + delimited user input| G[Gemini]
+  G -->|wording, ideas, proposed edits| V[normalizePlan + reconcileBudget]
+  API --> E[Planning engine]
+  E --> V
+  V --> UI
+  UI -. server or AI unavailable .-> E2[Same engine in the browser]
 ```
 
-### 2. Configure Environment (Optional)
-```bash
-cp .env.example .env
-```
-Add your free Gemini API key from [Google AI Studio](https://aistudio.google.com/):
-```env
-VITE_GEMINI_API_KEY=your_gemini_api_key_here
-```
-*(Note: You can also supply the API key directly in the web app via the settings modal, or test all features in Instant Demo Mode without an API key!)*
+1. **New plan:** `POST /api/plan` normalizes the intake and runs `generatePlan()`. If `GEMINI_API_KEY` is set, Gemini writes the summary, ideas and milestone descriptions under a response schema. Its numbers are ignored, so the engine's numbers always stand.
+2. **Chat:** `POST /api/chat` sends a compact plan plus the user's message (inside `<user_input>` tags) to Gemini. A proposed edit is merged, validated by `normalizePlan()` and re-balanced by `reconcileBudget()`. The user sees it as a proposal and applies it with one click.
+3. **No key, Gemini error, or no server** (for example GitHub Pages): the same engine answers, either on the server or in the browser. Each reply is labelled with its source.
 
-### 3. Start Development Server
-```bash
-npm run dev
-```
+## Assumptions
 
-### 4. Run Automated Test Suite
-```bash
-npm test
-```
-*Executes 22 automated unit tests across the budget engine, timeline milestone progress, prompt engineering contracts, and security/sanitization defenses with 100% pass rate.*
+- Amounts are in USD. Budget shares, per-guest minimums ($90 wedding, $40 birthday, $15 community) and vendor lead times are general planning heuristics, not market quotes. They live in `profiles.js` so they can be tuned.
+- If no date is given, the plan assumes the recommended lead time for that event type and says so in the summary.
+- Vendors are listed as roles ("Full-service caterer & bar"), not real businesses. Contacts start empty.
+- Plans are saved only in the user's browser (`localStorage`). There are no accounts or server-side storage.
+- One currency, one event per browser.
 
-### 5. Build for Production
+## Run it
+
+Requirements: Node.js 22.9 or newer.
+
 ```bash
+npm ci
 npm run build
+npm start              # API + built app on http://localhost:8080
 ```
 
----
+Optional AI: copy `.env.example` to `.env` and set `GEMINI_API_KEY` (server-side only, never `VITE_`-prefixed). Without it, everything works through the planning engine.
 
-## 📊 Evaluation & Rubric Compliance
+For development, run `npm start` in one terminal and `npm run dev` in another. Vite proxies `/api` to port 8080.
 
-CelebAI is engineered specifically to excel against all 6 Hack2skill evaluation focus areas:
-- **Problem Statement Alignment:** Multi-category event planner with real-time budget charts, phased timelines, and vendor tracking.
-- **Security:** Complete client-side input sanitization, HTML entity escaping against XSS, and zero remote key persistence.
-- **Efficiency:** Pure functional `useMemo` computation hooks and sub-700ms Vite builds.
-- **Testing:** Automated Vitest test suite (`npm test`) with 100% pass rate.
-- **Accessibility:** Full WCAG 2.1 AA compliance with semantic landmarks, ARIA tab controls, and high-contrast theme support.
-- **Code Quality:** Modular architecture verified via Oxlint with 0 errors.
+Container (for example Cloud Run): `docker build -t celebai .` then `docker run -p 8080:8080 -e GEMINI_API_KEY=... celebai`.
 
-*Read the full architecture and evaluation breakdown in [EVALUATION.md](./EVALUATION.md).*
+## Testing
 
----
+```bash
+npm run lint            # oxlint incl. jsx-a11y rules
+npm test                # vitest
+npm run test:coverage   # with coverage thresholds (80% statements/lines/functions, 70% branches)
+npm run check           # lint + coverage + build
+```
 
-## 🌐 Deployment
+The suite lives in [`tests/`](tests):
+- **`domain/`:** budget totals for extreme budgets, headcount scaling, outdoor and large-crowd rules, timeline compression and past dates, dietary and kids rules, insights, every plan adjustment, every assistant intent, and hostile or malformed input for the validators.
+- **`server/`:** security headers, 400/404/413/429 responses, engine-only mode, merging of AI output with numbers kept fixed, fallback when Gemini fails or returns junk, SPA hosting, and the Gemini wrapper with a mocked SDK.
+- **`services/`:** the browser API client and its offline fallback.
+- **`ui/`:** the full app in jsdom. Covers the intake flow, keyboard tab navigation, dialog focus trap with Escape and focus return, applying assistant proposals, corrupted or unavailable storage, component behaviour, and automated `axe-core` checks with and without a dialog open.
+- **`utils/`:** content of the PDF export.
 
-### Deploy to GitHub Pages (Automated via GitHub Actions)
-This repository includes a GitHub Actions workflow `.github/workflows/deploy.yml` that builds and deploys CelebAI on every push to `main`.
+CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs lint, coverage, `npm audit` (production dependencies) and the build on every push. It deploys Pages only after these pass.
 
-### Deploy to Vercel
-1. Import repository on [Vercel](https://vercel.com/new).
-2. Framework Preset: **Vite**
-3. Build Command: `npm run build`
-4. Output Directory: `dist`
-5. (Optional) Add `VITE_GEMINI_API_KEY` to Environment Variables.
-6. Click **Deploy**!
+## Security
 
----
+- **No secrets in the browser.** The Gemini key is read from the server environment only. `.env` is git-ignored.
+- **Validation at every boundary.** `normalizePlan()` / `normalizeIntake()` enforce types, enums, ranges, string lengths, list sizes and colour formats on form input, saved plans, request bodies and model output. Invalid plans are rejected and malformed fields repaired.
+- **Prompt-injection hardening.** User text is delimited and declared as data in the system prompt. The model may only return schema-shaped JSON. Proposed numbers are re-validated and re-balanced.
+- **HTTP hardening.** `helmet` sets a strict Content-Security-Policy (`script-src 'self'`, `frame-ancestors 'none'`, `object-src 'none'`) and other headers. There is also a 64 KB body limit, a per-IP rate limit (30 requests/min on `/api`) and generic error messages. `TRUST_PROXY=1` behind exactly one proxy (Cloud Run) so rate limiting sees real client IPs.
+- **Safe rendering.** Assistant markdown is rendered as React elements (no `dangerouslySetInnerHTML`). A test checks that HTML in replies stays text.
+- Note: GitHub Pages cannot send these headers. The CSP applies when the app is served by `server/`.
 
-## 🏆 PromptWars Challenge 5 Deliverable
+## Accessibility
 
-Built for the **PromptWars Virtual Challenge 5: Celebration & Event Planner**. Includes complete promotional assets and composition generated via the `/brag` engine in [`brag-output/`](./brag-output).
+- Skip link, landmarks (`header`, `main`, `aside`), one `h1` and an ordered heading structure.
+- WAI-ARIA tabs with roving tabindex and Arrow/Home/End keys.
+- Dialogs have `role="dialog"`, `aria-modal` and labels. Focus is trapped while they are open, Escape closes them, and focus returns to the opener.
+- Every form control has a label. Icon buttons have names. The event-type picker uses real radio buttons.
+- The CSS donut chart has a text alternative and a legend. Progress uses native `<progress>`. Status messages go to a polite live region.
+- `prefers-reduced-motion` disables animations and confetti. Focus rings are visible.
+- Theme text tokens (`--text-secondary`, `--text-muted`) measure at least 4.5:1 against every theme's canvas and card backgrounds (WCAG AA for body text). Hard-coded accent colours inside individual components have not been fully audited.
+- Checked automatically by oxlint `jsx-a11y` rules and `axe-core` tests. jsdom cannot measure colour contrast, so the token ratios were calculated separately.
+
+## Efficiency
+
+- The production entry bundle went from 818 kB (252 kB gzip) to about 298 kB (93 kB gzip). jsPDF (and its optional html2canvas/DOMPurify chunks), confetti, the chat panel and the intake dialog are loaded on demand.
+- Plan maths is O(n) over a few dozen items and memoized in the UI.
+- Prompts send a compact plan (ids, names, numbers) instead of the full plan. Each AI call has one model, one request and a 20 s timeout, then falls back to the engine. There are no retry loops.
+
+## Project structure
+
+```text
+server/            Express API, Gemini wrapper, prompts and response schemas
+src/domain/        Planning engine, profiles, validation, offline assistant, sample intakes
+src/services/      Browser API client with offline fallback
+src/components/    React components (each with its own CSS file)
+src/hooks/         Persistent plan state
+tests/             Vitest suites (domain, server, services, ui, utils)
+```
+
+## Known limitations
+
+- No accounts or sync. A plan lives in one browser.
+- Cost heuristics are generic, not regional.
+- Gemini output quality depends on the model. The engine guarantees the numbers, not the prose.

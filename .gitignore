@@ -28,16 +28,11 @@ dist-ssr
 .env.*
 !.env.example
 
-# Hyperframes internal artifacts
-**/.hyperframes/
-
-# Internal Agent Customizations (keep local, not part of web submission)
+# Local agent tooling
 .agents/
-__pycache__/
-*.pyc
 
-# Heavy Media Assets (videos, audio tracks - keep under 10MB limit)
-brag-output/**/*.mp4
-brag-output/**/*.mp3
-brag-output/**/*.ogg
-brag-output/composition/assets/
+# Local promo/video workspace (not part of the submission)
+brag-output/
+
+# Test coverage output
+coverage/
