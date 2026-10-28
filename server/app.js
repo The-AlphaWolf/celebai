@@ -24,13 +24,20 @@ function logAiFailure(route, error) {
   console.warn(`[${route}] Gemini call failed: ${error?.status ?? error?.name ?? 'unknown error'}`);
 }
 
+/** Model ideas first; engine ideas fill any shortfall so a plan never ends up with fewer ideas. */
+function topUpIdeas(aiIdeas, engineIdeas) {
+  const titles = new Set(aiIdeas.map((idea) => String(idea?.title).toLowerCase()));
+  const fill = engineIdeas.filter((idea) => !titles.has(idea.title.toLowerCase()));
+  return [...aiIdeas, ...fill].slice(0, Math.max(aiIdeas.length, engineIdeas.length));
+}
+
 /** Merges AI wording into an engine plan without touching any numbers. */
 export function mergePlanEnrichment(plan, enrichment) {
   if (!enrichment || typeof enrichment !== 'object') return plan;
   const candidate = normalizePlan({
     ...plan,
     summary: enrichment.summary || plan.summary,
-    creativeIdeas: Array.isArray(enrichment.creativeIdeas) && enrichment.creativeIdeas.length ? enrichment.creativeIdeas : plan.creativeIdeas,
+    creativeIdeas: topUpIdeas(Array.isArray(enrichment.creativeIdeas) ? enrichment.creativeIdeas : [], plan.creativeIdeas),
   });
   if (!candidate) return plan;
   const descriptions = new Map(
@@ -49,7 +56,15 @@ export function mergePlanEnrichment(plan, enrichment) {
 /** Applies a model-proposed update on top of the current plan, then validates and re-balances it. */
 export function applyProposedUpdate(plan, proposal) {
   if (!proposal || typeof proposal !== 'object') return null;
-  const merged = normalizePlan({ ...plan, ...proposal });
+  // Budget items are a patch keyed by id: matching items are updated (keeping key and
+  // colour), new ids are appended, and lines the model did not mention are kept.
+  const patches = Array.isArray(proposal.budgetItems) ? proposal.budgetItems.filter((item) => item && typeof item === 'object') : [];
+  const patchById = new Map(patches.map((item) => [item.id, item]));
+  const budgetItems = [
+    ...plan.budgetItems.map((existing) => ({ ...existing, ...patchById.get(existing.id) })),
+    ...patches.filter((item) => !plan.budgetItems.some((existing) => existing.id === item.id)),
+  ];
+  const merged = normalizePlan({ ...plan, ...proposal, budgetItems });
   return merged ? reconcileBudget(merged) : null;
 }
 

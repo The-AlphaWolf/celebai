@@ -316,7 +316,7 @@ export function reconcileBudget(plan) {
   const items = plan.budgetItems.map((item) => ({ ...item }));
   let reserve = findContingency(items);
   if (!reserve) {
-    reserve = { id: `b${items.length + 1}`, key: CONTINGENCY_KEY, category: 'Contingency Reserve', allocated: 0, spent: 0, color: '#94A3B8' };
+    reserve = { id: 'b_reserve', key: CONTINGENCY_KEY, category: 'Contingency Reserve', allocated: 0, spent: 0, color: '#94A3B8' };
     items.push(reserve);
   }
   const others = items.filter((item) => item !== reserve).reduce((sum, item) => sum + item.allocated, 0);

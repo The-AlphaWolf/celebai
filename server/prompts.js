@@ -17,7 +17,7 @@ export const PLAN_SYSTEM_INSTRUCTION = `You are CelebAI, an experienced event pl
 ${GUARDRAILS}`;
 
 export const CHAT_SYSTEM_INSTRUCTION = `You are CelebAI, an experienced event planning assistant. Answer the user's question about their current plan concisely (under 180 words, simple markdown: ### headings, - bullets, **bold**).
-If and only if the user asks to change the plan, return the full updated plan in "updatedPlan" using the same structure and ids; otherwise omit it. Keep the total budget unless the user asks to change it.
+If and only if the user asks to change the plan, return "updatedPlan" with only the fields that change. For budgetItems, include just the items you change, with their existing ids (new categories get a new id); items you leave out stay as they are. Keep the total budget unless the user asks to change it; the contingency line absorbs differences.
 ${GUARDRAILS}`;
 
 const ideaSchema = {

@@ -101,6 +101,7 @@ describe('API with a (fake) Gemini client', () => {
     expect(data.source).toBe('gemini');
     expect(data.plan.summary).toBe('A neon night to remember.');
     expect(data.plan.creativeIdeas[0].title).toBe('Taco bar');
+    expect(data.plan.creativeIdeas).toHaveLength(samplePlan.creativeIdeas.length); // topped up from the engine
     expect(data.plan.timeline[0].description).toBe('Book the loft early.');
     expect(data.plan.budget).toBe(6000);
     expect(data.plan.budgetItems).toEqual(samplePlan.budgetItems);
@@ -173,6 +174,21 @@ describe('merge helpers', () => {
   it('rejects proposals that are not objects', () => {
     expect(applyProposedUpdate(samplePlan, undefined)).toBeNull();
     expect(applyProposedUpdate(samplePlan, { title: '' })).toBeNull();
+  });
+
+  it('keeps existing keys and colours when the model edits budget items by id', () => {
+    const [first] = samplePlan.budgetItems;
+    const updated = applyProposedUpdate(samplePlan, { budgetItems: [{ id: first.id, category: first.category, allocated: 100 }, null] });
+    expect(updated.budgetItems[0]).toMatchObject({ id: first.id, key: first.key, color: first.color, allocated: 100 });
+    // Items the model did not mention are kept; null is dropped.
+    expect(updated.budgetItems.map((item) => item.id)).toEqual(samplePlan.budgetItems.map((item) => item.id));
+    expect(updated.budgetItems[1]).toEqual(samplePlan.budgetItems[1]);
+  });
+
+  it('appends new categories proposed by the model and rebalances the reserve', () => {
+    const updated = applyProposedUpdate(samplePlan, { budgetItems: [{ id: 'new1', category: 'Photo booth', allocated: 300 }] });
+    expect(updated.budgetItems.at(-1)).toMatchObject({ id: 'new1', category: 'Photo booth', allocated: 300 });
+    expect(summarizeBudget(updated).allocated).toBe(samplePlan.budget);
   });
 
   it('keeps budget totals exact after applying a proposal', () => {

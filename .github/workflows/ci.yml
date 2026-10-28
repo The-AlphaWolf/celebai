@@ -24,6 +24,9 @@ jobs:
       - run: npm run lint
       - run: npm run test:coverage
       - run: npm audit --omit=dev --audit-level=high
+      - name: Docker image builds
+        run: docker build -t celebai:ci .
+
       - run: npm run build
         env:
           # Pages has no API server; the build talks to the in-browser engine only.

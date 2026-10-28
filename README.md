@@ -28,7 +28,7 @@ The design splits the work into two parts. Decisions are made by a **determinist
 | Guest count ≥ 150 | Adds *Security & Guest Logistics* and a stewards vendor |
 | Days until the event | Short notice raises the reserve by 5%. Milestones are scheduled backwards from the date and compressed proportionally when time is short. Vendors whose usual booking lead time has already passed are marked **Critical** |
 | Notes | Dietary words (vegan, gluten, halal, allergy…) go into the caterer brief. Mentions of kids or family add a kids' activity vendor. Theme and notes keywords rank the idea library |
-| Plan changes | Budget changes rescale all lines. Headcount changes rescale per-guest lines and take the difference from the reserve. Trims move savings into the reserve. Allocations always sum exactly to the budget |
+| Plan changes | Budget changes rescale all lines. Headcount changes rescale per-guest lines and take the difference from the reserve. Trims move savings into the reserve. Plans the engine creates or adjusts always sum exactly to the budget; manual edits in the table can over-allocate, and the insights panel flags it |
 
 `analyzePlan()` checks the current plan and reports **planner insights**:
 - over-allocation
@@ -53,7 +53,7 @@ flowchart LR
 ```
 
 1. **New plan:** `POST /api/plan` normalizes the intake and runs `generatePlan()`. If `GEMINI_API_KEY` is set, Gemini writes the summary, ideas and milestone descriptions under a response schema. Its numbers are ignored, so the engine's numbers always stand.
-2. **Chat:** `POST /api/chat` sends a compact plan plus the user's message (inside `<user_input>` tags) to Gemini. A proposed edit is merged, validated by `normalizePlan()` and re-balanced by `reconcileBudget()`. The user sees it as a proposal and applies it with one click.
+2. **Chat:** `POST /api/chat` sends a compact plan plus the user's message (inside `<user_input>` tags) to Gemini. A proposed edit is a patch: budget lines are matched by id (lines the model leaves out are kept), then the result is validated by `normalizePlan()` and re-balanced by `reconcileBudget()`. The user sees it as a proposal and applies it with one click.
 3. **No key, Gemini error, or no server:** the same engine answers, either on the server or in the browser. Each reply is labelled with its source. Static builds (`VITE_STATIC_DEMO=true`, used for GitHub Pages) skip the API entirely.
 
 ## Assumptions
