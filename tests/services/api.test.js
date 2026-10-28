@@ -67,3 +67,22 @@ describe('sendChat', () => {
     expect(result.plan.budget).toBe(15000);
   });
 });
+
+describe('static demo build (VITE_STATIC_DEMO=true)', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it('never calls the network and answers with the engine', async () => {
+    vi.stubEnv('VITE_STATIC_DEMO', 'true');
+    const fetchSpy = vi.fn();
+    vi.stubGlobal('fetch', fetchSpy);
+
+    expect(await checkAiStatus()).toBe('offline');
+    const created = await createPlan(intake);
+    expect(created).toEqual({ plan: generatePlan(intake), source: 'engine' });
+    const chat = await sendChat(plan, 'set budget to 15000');
+    expect(chat.plan.budget).toBe(15000);
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+});

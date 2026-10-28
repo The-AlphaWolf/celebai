@@ -4,7 +4,7 @@ CelebAI helps people organize **weddings, birthdays and community events**. You 
 
 - **Chosen vertical:** PromptWars Challenge 5, *Celebration & Event Planner*.
 - **Persona:** someone organizing a celebration without professional planning experience, who needs to know *how much to spend on what, what to book first, and by when*.
-- **Static demo:** <https://the-alphawolf.github.io/celebai/>. GitHub Pages runs without the API server, so the demo uses the in-browser planning engine.
+- **Static demo:** <https://the-alphawolf.github.io/celebai/>. GitHub Pages has no API server, so the demo is built with `VITE_STATIC_DEMO=true` and runs entirely on the in-browser planning engine, with no network calls.
 
 ## Approach and logic
 
@@ -54,7 +54,7 @@ flowchart LR
 
 1. **New plan:** `POST /api/plan` normalizes the intake and runs `generatePlan()`. If `GEMINI_API_KEY` is set, Gemini writes the summary, ideas and milestone descriptions under a response schema. Its numbers are ignored, so the engine's numbers always stand.
 2. **Chat:** `POST /api/chat` sends a compact plan plus the user's message (inside `<user_input>` tags) to Gemini. A proposed edit is merged, validated by `normalizePlan()` and re-balanced by `reconcileBudget()`. The user sees it as a proposal and applies it with one click.
-3. **No key, Gemini error, or no server** (for example GitHub Pages): the same engine answers, either on the server or in the browser. Each reply is labelled with its source.
+3. **No key, Gemini error, or no server:** the same engine answers, either on the server or in the browser. Each reply is labelled with its source. Static builds (`VITE_STATIC_DEMO=true`, used for GitHub Pages) skip the API entirely.
 
 ## Assumptions
 
